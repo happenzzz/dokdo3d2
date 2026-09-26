@@ -136,13 +136,28 @@ const UI = {
     $('#bLeave').onclick = () => boatLeave(false);
     $('#bHorn').onclick = () => { AUDIO.unlock(); AUDIO.horn(); };
     $('#bClimb').onclick = () => { AUDIO.unlock(); EXP.climb = !EXP.climb; AUDIO.tick(); this.toast(EXP.climb ? '🧗 등반 모드! 절벽 쪽으로 밀면 붙잡고 올라가요' : '등반 모드를 껐어요'); this.expHud(); };
-    $('#introTour').onclick = () => this.closeIntro('tour');
+    $('#bNight').onclick = () => { AUDIO.unlock(); NIGHT.set(!R.night); };
+    $('#bMore').onclick = e => { e.stopPropagation(); document.body.classList.toggle('toolsOpen'); };
+    $('#top .tools').addEventListener('click', () => setTimeout(() => document.body.classList.remove('toolsOpen'), 150));
+    document.addEventListener('pointerdown', e => { if (!e.target.closest('#top')) document.body.classList.remove('toolsOpen'); });
+    const fsOk = document.fullscreenEnabled || document.webkitFullscreenEnabled;
+    if (!fsOk) $('#bFull').style.display = 'none';
+    $('#bFull').onclick = () => this.toggleFull();
+    const fsChange = () => { const on = !!(document.fullscreenElement || document.webkitFullscreenElement); $('#bFull').textContent = on ? '🗗' : '⛶'; $('#bFull').title = on ? '전체화면 끝내기' : '전체화면'; setTimeout(resize, 120); };
+    document.addEventListener('fullscreenchange', fsChange); document.addEventListener('webkitfullscreenchange', fsChange);
+    if (localStorage.getItem('dokdo3d.night') === '1') NIGHT.set(true, true);
     for (const [id, v] of [['#bUp', 1], ['#bDown', -1]]) { const b = $(id); b.onpointerdown = e => { e.preventDefault(); EXP.vert = v; }; b.onpointerup = b.onpointerleave = b.onpointercancel = () => { EXP.vert = 0; }; }
-    $('#introGo').onclick = () => this.closeIntro('observer'); $('#introExp').onclick = () => this.closeIntro('explorer'); $('#introQuiz').onclick = () => this.closeIntro('quiz');
     $('#devToggle').onclick = () => document.body.classList.toggle('devMin');
     $$('#devPanel .dtabs button').forEach(b => b.onclick = () => { $$('#devPanel .dtabs button').forEach(x => x.classList.toggle('on', x === b)); this.devTab = b.dataset.t; this.devRefresh(); });
     this.devTab = 'elems'; this.dexCount();
     if (localStorage.getItem('dokdo3d.fps') === 'on') document.body.classList.add('showFps');
+  },
+  toggleFull() {
+    const d = document, el = d.documentElement;
+    if (d.fullscreenElement || d.webkitFullscreenElement) { (d.exitFullscreen || d.webkitExitFullscreen).call(d); return; }
+    const req = el.requestFullscreen || el.webkitRequestFullscreen;
+    if (!req) { this.toast('이 기기에서는 전체화면을 쓸 수 없어요'); return; }
+    try { const r = req.call(el, { navigationUI: 'hide' }); if (r && r.catch) r.catch(() => this.toast('전체화면을 열 수 없어요. 새 창에서 열어 보세요')); } catch (e) { this.toast('전체화면을 열 수 없어요'); }
   },
   closeIntro(m) { AUDIO.unlock(); $('#intro').classList.add('hide'); setTimeout(() => $('#intro').remove(), 600); MODE.set(m); },
   soundIcon() { $('#bSound').textContent = AUDIO.on ? '🔊' : '🔇'; },
@@ -206,6 +221,13 @@ const UI = {
   },
   dexCount() { const all = DEX.all(); $('#dexCount').textContent = all.filter(i => DEX.set.has(i)).length + '/' + all.length; },
   modal(html, cls = '') { $('#mbox').className = 'mbox ' + cls; $('#mbox').innerHTML = html + '<button class="mclose" aria-label="닫기">✕</button>'; $('#modal').classList.add('show'); $('#mbox .mclose').onclick = () => this.closeModal(); },
+  ask(msg) {
+    return new Promise(res => {
+      this.modal(`<h2>확인해 주세요</h2><p class="askmsg">${msg}</p><div class="askbtns"><button class="big line" id="askNo">취소</button><button class="big bad" id="askYes">네, 할게요</button></div>`, 'askbox');
+      const done = v => { this.closeModal(); res(v); };
+      $('#askYes').onclick = () => done(true); $('#askNo').onclick = () => done(false); $('#mbox .mclose').onclick = () => done(false);
+    });
+  },
   closeModal() { $('#modal').classList.remove('show'); },
   openDex() {
     const all = DEX.all(), got = all.filter(i => DEX.set.has(i)).length, groups = {};
@@ -225,7 +247,7 @@ const UI = {
       <div class="setrow"><b>도감 기록</b><div class="seg"><button id="sDex">도감 비우기</button></div></div>`);
     $$('#mbox [data-q]').forEach(b => b.onclick = () => { localStorage.setItem('dokdo3d.quality', b.dataset.q); location.reload(); });
     $('#sFps').onclick = e => { const on = document.body.classList.toggle('showFps'); e.currentTarget.classList.toggle('on', on); localStorage.setItem('dokdo3d.fps', on ? 'on' : 'off'); };
-    $('#sDex').onclick = () => { if (confirm('도감 기록을 모두 지울까요?')) { DEX.set.clear(); localStorage.removeItem('dokdo3d.dex'); this.dexCount(); this.toast('도감을 비웠어요'); } };
+    $('#sDex').onclick = async () => { if (await UI.ask('도감 기록을 모두 지울까요?')) { DEX.set.clear(); localStorage.removeItem('dokdo3d.dex'); this.dexCount(); this.toast('도감을 비웠어요'); } };
   },
   openHelp() {
     this.modal(`<h2>❔ 사용 방법</h2><div class="help">
@@ -248,7 +270,7 @@ const UI = {
       for (const [g, list] of Object.entries(groups)) h += `<h4>${GROUPS[g]} <small>${list.length}</small></h4>` + list.map(e => { const k = KINDS[e.kind]; return `<div class="erow ${SCN.sel === e ? 'sel' : ''} ${e.hidden ? 'hid' : ''}" data-u="${e.uid}"><span class="en">${k.icon} ${k.name}</span><button data-a="vis" title="보이기">${e.hidden ? '🚫' : '👁️'}</button><button data-a="del" title="삭제">🗑️</button></div>`; }).join('');
     } else if (t === 'add') {
       h = `<p class="dhint">추가할 것을 고른 뒤 장면에서 놓을 곳을 눌러요. 바다 생물은 바닷속에, 식물은 땅 위에 놓여요.</p>`;
-      const groups = {}; for (const [id, k] of Object.entries(KINDS)) (groups[k.group] = groups[k.group] || []).push([id, k]);
+      const groups = {}; for (const [id, k] of Object.entries(KINDS)) if (!k.game) (groups[k.group] = groups[k.group] || []).push([id, k]);
       for (const [g, list] of Object.entries(groups)) h += `<h4>${GROUPS[g]}</h4><div class="pal">` + list.map(([id, k]) => `<button data-k="${id}" class="${DEV.place === id ? 'on' : ''}"><span>${k.icon}</span>${k.name.replace(' (과거 복원)', '').replace(' (쉬는 중)', '(앉음)')}</button>`).join('') + '</div>';
     } else if (t === 'terrain') {
       const b = DEV.brush;
@@ -286,11 +308,16 @@ const UI = {
     body.querySelectorAll('[data-tint]').forEach(b => b.onclick = () => { R.tintName = b.dataset.tint; R.tint = TINTS[R.tintName]; saveLater(); this.devRefresh(); });
     const on = (id, fn) => { const b = body.querySelector(id); if (b) b.onclick = fn; };
     on('#sSplash', () => { const p = V3.add(OBS.t, [0, 0, 0]); FX.splash(p[0], p[2], 1.4, false); });
-    on('#tReset', () => { if (confirm('지형을 처음 모양으로 되돌릴까요?')) { devSnapshot(true); TER.reset(); relayoutAll(); saveLater(); } });
+    on('#tReset', async () => { if (await UI.ask('지형을 처음 모양으로 되돌릴까요?')) { devSnapshot(true); TER.reset(); relayoutAll(); saveLater(); } });
     on('#dUndo', devUndo);
-    on('#dExport', () => { const blob = new Blob([JSON.stringify({ app: 'dokdo3d', v: 1, elems: sceneSerialize(), ter: TER.serialize(), sea: seaState() })], { type: 'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = '독도3D_장면_' + new Date().toISOString().slice(0, 10) + '.json'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); });
+    on('#dExport', async () => {
+      const json = JSON.stringify({ app: 'dokdo3d', v: 1, elems: sceneSerialize(), ter: TER.serialize(), sea: seaState() }), name = '독도3D_장면_' + new Date().toISOString().slice(0, 10) + '.json';
+      let dl = null; try { if (window.claude && window.claude.use) dl = await window.claude.use('downloads'); } catch (e) { dl = null; }
+      if (dl) { try { await dl.save({ filename: name, data: json }); this.toast('장면 파일을 저장했어요 💾'); } catch (e) { if (!e || e.code !== 'declined') this.toast('이 화면에서는 파일 저장을 할 수 없어요'); } return; }
+      const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([json], { type: 'application/json' })); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    });
     const imp = body.querySelector('#dImport'); if (imp) imp.onchange = async () => { try { const d = JSON.parse(await imp.files[0].text()); if (!d.elems) throw 0; devSnapshot(true); applyScene(d); this.toast('장면을 불러왔어요'); } catch (e) { this.toast('불러올 수 없는 파일이에요'); } };
-    on('#dReset', () => { if (confirm('모든 요소와 지형, 바다 설정을 처음 상태로 되돌릴까요?')) { devSnapshot(true); localStorage.removeItem('dokdo3d.scene'); applyScene({ sea: { amp: 1, speed: 1, clarity: 0.75, tint: 'base' } }); this.toast('처음 상태로 되돌렸어요'); } });
+    on('#dReset', async () => { if (await UI.ask('모든 요소와 지형, 바다 설정을 처음 상태로 되돌릴까요?')) { devSnapshot(true); localStorage.removeItem('dokdo3d.scene'); applyScene({ sea: { amp: 1, speed: 1, clarity: 0.75, tint: 'base' } }); this.toast('처음 상태로 되돌렸어요'); } });
     this.selBar();
   },
   selBar() {
@@ -318,9 +345,40 @@ const UI = {
 };
 function devDelete(e) { devSnapshot(false); SCN.elems = SCN.elems.filter(x => x !== e); if (SCN.sel === e) SCN.sel = null; if (KINDS[e.kind].beh === 'rock') stampRocks(); buildLabels(); saveLater(); UI.devRefresh(); AUDIO.pop(); UI.toast(KINDS[e.kind].name + ' 삭제'); }
 
+/* ---------- pixel-art loading screen (3 frames: sailing -> sailing -> arrival) ---------- */
+const LOADER = {
+  t0: performance.now(), real: 0, shown: -1, MIN: 3200,
+  init() {
+    const box = $('#loadCells'); box.innerHTML = '<i></i>'.repeat(10); this.cells = [...box.children];
+    const tick = () => { if (this.stopped) return; this.render(); requestAnimationFrame(tick); }; tick();
+  },
+  set(p, msg) { this.real = p; if (msg) $('#loadMsg').textContent = msg; this.render(); },
+  render() {
+    const time = Math.min(100, (performance.now() - this.t0) / this.MIN * 100), n = Math.floor(Math.min(this.real, time) / 10 + 0.001);
+    if (n !== this.shown) {
+      this.shown = n; this.cells.forEach((c, i) => c.classList.toggle('on', i < n));
+      const L = $('#loading'); if (L && !L.classList.contains('arrived')) { L.classList.toggle('s1', n < 4); L.classList.toggle('s2', n >= 4); }
+    }
+  },
+  finish(warm) {
+    return new Promise(res => {
+      const go = () => {
+        if (this.shown < 10) { requestAnimationFrame(go); return; }
+        const L = $('#loading'); L.classList.remove('s1', 's2'); L.classList.add('arrived'); $('#loadMsg').textContent = '독도에 도착했어요! 🎉';
+
+        let done = false; const end = () => { if (done) return; done = true; this.stopped = true; L.classList.add('hide'); setTimeout(() => L.remove(), 800); res(); };
+        L.addEventListener('pointerdown', end);
+        setTimeout(() => { try { warm && warm(); } catch (e) { } setTimeout(end, 1800); }, 350);   // the arrival picture stays up for its full time even if warm-up is slow
+      };
+      go();
+    });
+  }
+};
+
 /* ---------- boot ---------- */
 async function boot() {
-  const step = async (pct, msg) => { $('#loadBar').style.width = pct + '%'; $('#loadMsg').textContent = msg; await new Promise(r => setTimeout(r, 0)); await new Promise(r => requestAnimationFrame(() => r())); };
+  LOADER.init();
+  const step = async (pct, msg) => { LOADER.set(pct, msg); await new Promise(r => setTimeout(r, 0)); await new Promise(r => requestAnimationFrame(() => r())); };
   try {
     R.quality = detectQuality();
     await step(3, '그래픽을 준비하고 있어요…');
@@ -346,11 +404,12 @@ async function boot() {
     bindSamplers(); UI.init(); setupInput(); buildLabels();
     resize(); addEventListener('resize', resize);
     document.addEventListener('visibilitychange', () => { if (document.hidden && AUDIO.ctx) AUDIO.ctx.suspend(); else if (AUDIO.ctx && AUDIO.on) AUDIO.ctx.resume(); });
-    await step(100, '준비 완료!');
-    MODE.set('observer'); OBS.yaw = 0.9; OBS.d = 1300; obsFly(PRESETS.all, 3.2);
+    await step(100, '거의 다 왔어요!');
+    MODE.set('observer'); OBS.yaw = 0.9; OBS.d = 1300; OBS.t = PRESETS.all.t.slice(); OBS.pitch = PRESETS.all.pitch;
+    await LOADER.finish(() => { obsApply(); resize(); drawScene(); });   // warm up shaders while the arrival frame shows
+    obsFly(PRESETS.all, 3.2);
     requestAnimationFrame(frame);
-    $('#loading').classList.add('hide'); setTimeout(() => $('#loading').remove(), 700);
-    $('#intro').classList.add('show');
+    UI.toast('위쪽 탭에서 관찰·관광·탐험·게임·퀴즈를 골라 보세요!');
   } catch (err) {
     console.error(err);
     $('#loadMsg').innerHTML = '앗, 시작하지 못했어요 😢<br><small>' + (err && err.message || err) + '</small>';

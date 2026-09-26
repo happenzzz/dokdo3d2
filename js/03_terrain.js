@@ -142,6 +142,28 @@ function terrainLighting() {
   }
   const b1 = boxBlur(H, W, D, 4), b2 = boxBlur(H, W, D, 14);
   for (let i = 0; i < N; i++) A[i] = clamp(1 - Math.max(0, b1[i] - H[i]) * 0.045 - Math.max(0, b2[i] - H[i]) * 0.012, 0.22, 1);
+  terrainMaterials(b1);
+}
+/* per-vertex material masks: vegetation coverage + rock tone (read by the shader, no per-pixel cost) */
+function terrainMaterials(blur) {
+  const { W, D, C, H, X0, Z0 } = TER, N = W * D;
+  const V = TER.V || (TER.V = new Float32Array(N)), T = TER.T || (TER.T = new Float32Array(N));
+  const dIn = edt2(W, D, i => H[i] <= 0.2);
+  const b2 = boxBlur(H, W, D, 2);
+  for (let j = 0; j < D; j++) for (let i = 0; i < W; i++) {
+    const k = j * W + i, h = H[k], x = X0 + i * C, z = Z0 + j * C;
+    const tn = noise2(x * 0.03, z * 0.03, 'g') - 0.5, tf = noise2(x * 0.11, z * 0.11, 'b') - 0.5;
+    T[k] = clamp(0.46 + tn * 0.7 + tf * 0.3 + smooth(4, 60, h) * 0.16 - smooth(9, 0, h) * 0.22, 0, 1);
+    if (h < 2) { V[k] = 0; continue; }
+    const ny = terrainNormal(i, j)[1];
+    const curv = clamp(((blur[k] - h) * 0.5 + (b2[k] - h) * 0.6) * 0.35, -1, 1);
+    let v = smooth(0.26, 0.62, ny) * (0.85 + curv * 0.5) + Math.max(0, curv) * 0.3 * smooth(0.15, 0.35, ny);
+    v *= smooth(3, 11, h) * smooth(2, 10, dIn[k] * C);
+    v *= 0.72 + 0.6 * noise2(x * 0.018 + 7, z * 0.018, 'r');
+    v *= x < -20 ? 1.18 : 0.95;
+    for (const p of PADS) { const dd = Math.hypot(x - p.x, z - p.z); if (dd < p.r + 4) v *= smooth(p.r * 0.6, p.r + 4, dd); }
+    V[k] = clamp(v, 0, 1);
+  }
 }
 
 function terrainNormal(i, j) {
@@ -159,7 +181,7 @@ function terrainFillVerts(j0, j1) {
     f[o] = X0 + i * C; f[o + 1] = H[k]; f[o + 2] = Z0 + j * C;
     const n = terrainNormal(i, j), bo = o * 4 + 12;
     b[bo] = Math.round(n[0] * 127); b[bo + 1] = Math.round(n[1] * 127); b[bo + 2] = Math.round(n[2] * 127); b[bo + 3] = 0;
-    b[bo + 4] = S[k] * 255; b[bo + 5] = A[k] * 255; b[bo + 6] = 0; b[bo + 7] = 255;
+    b[bo + 4] = S[k] * 255; b[bo + 5] = A[k] * 255; b[bo + 6] = TER.V[k] * 255; b[bo + 7] = TER.T[k] * 255;
   }
 }
 function terrainFillTex(j0, j1) {

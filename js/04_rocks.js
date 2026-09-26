@@ -94,7 +94,10 @@ function buildRockMesh(shape, seed, quality) {
     let occ = 0;
     for (const s of [1.2, 2.6, 5, 9]) occ += Math.max(0, s - sdf(x + g[0] * s, y + g[1] * s, z + g[2] * s)) / s * 0.3;
     const ao = clamp(1 - occ, 0.18, 1) * (y < 0 ? 0.85 : 1);
-    col[i * 4] = col[i * 4 + 1] = col[i * 4 + 2] = 255; col[i * 4 + 3] = ao * 255;
+    const tn = fbm3(x * 0.05 + seed, y * 0.04, z * 0.05);
+    const rt = clamp(0.40 + (tn - 0.5) * 0.9 + smooth(3, 30, y) * 0.15 - smooth(8, 0, y) * 0.22, 0, 1);
+    const vg = clamp(smooth(0.62, 0.9, g[1]) * smooth(7, 16, y) * (0.3 + 1.1 * vnoise3(x * 0.08, y * 0.08 + seed, z * 0.08)) * 0.85, 0, 1);
+    col[i * 4] = rt * 255; col[i * 4 + 1] = vg * 255; col[i * 4 + 2] = 255; col[i * 4 + 3] = ao * 255;
   }
   // footprint at the waterline for foam/wave damping
   const fp = [];

@@ -67,6 +67,7 @@ function initGL(canvas) {
 }
 function bindSamplers() {
   const T = R.tex; const units = [[TER.tex, 'uHeight'], [T.texCaustic, 'uCaustic'], [T.texNoise, 'uNoise'], [T.texRock, 'uRockN'], [T.texSky, 'uSky'], [T.texWater, 'uWaterTex'], [ATLAS.tex, 'uTex']];
+  R.units = units.map(u => u[0]);
   units.forEach(([t], i) => { gl.activeTexture(gl.TEXTURE0 + i); gl.bindTexture(gl.TEXTURE_2D, t); });
   for (const p of Object.values(R.P)) { gl.useProgram(p.p); units.forEach(([, n], i) => { if (p.u[n]) gl.uniform1i(p.u[n], i); }); }
 }
@@ -121,25 +122,26 @@ function project(p) {
   return [(x / w * 0.5 + 0.5) * R.canvas.clientWidth, (1 - (y / w * 0.5 + 0.5)) * R.canvas.clientHeight, w];
 }
 
-const HAZE = srgb('#b9d3e2'), ZEN = srgb('#3f78c4');
+const HAZE = srgb('#b3d1ea'), ZEN = srgb('#2a68cc');
 function setCommon(p) {
   const u = p.u, c = R.cam;
   gl.uniformMatrix4fv(u.uVP, false, R.vp); gl.uniform3fv(u.uCam, c.pos); gl.uniform1f(u.uTime, R.time);
-  if (u.uSun) gl.uniform3fv(u.uSun, SUN); if (u.uSunCol) gl.uniform3fv(u.uSunCol, SUNCOL);
-  if (u.uHaze) gl.uniform3fv(u.uHaze, HAZE); if (u.uZenith) gl.uniform3fv(u.uZenith, ZEN);
+  if (u.uSun) gl.uniform3fv(u.uSun, SUN); if (u.uSunCol) gl.uniform3fv(u.uSunCol, R.sunCol || SUNCOL);
+  if (u.uHaze) gl.uniform3fv(u.uHaze, R.haze || HAZE); if (u.uZenith) gl.uniform3fv(u.uZenith, R.zen || ZEN); if (u.uNight) gl.uniform1f(u.uNight, R.night || 0);
   if (u.uUnder) gl.uniform1f(u.uUnder, R.under ? 1 : 0); if (u.uClarity) gl.uniform1f(u.uClarity, R.clarity);
   if (u.uFocus) gl.uniform4f(u.uFocus, R.focus.c[0], R.focus.c[1], R.focus.c[2], R.focus.r); if (u.uFocusAmt) gl.uniform1f(u.uFocusAmt, R.focus.amt);
   if (u.uExposure) gl.uniform1f(u.uExposure, R.exposure); if (u.uHInfo) gl.uniform4fv(u.uHInfo, TER.hinfo);
 }
 
 function drawScene() {
+  for (let i = 0; i < R.units.length; i++) { gl.activeTexture(gl.TEXTURE0 + i); gl.bindTexture(gl.TEXTURE_2D, R.units[i]); } gl.activeTexture(gl.TEXTURE0 + R.units.length);
   const c = R.cam; camBasis();
   const asp = R.canvas.width / R.canvas.height;
   mat4Persp(R.proj, c.fov, asp, c.near, c.far); mat4View(R.view, c.pos, c.fwd, c.right, c.up); mat4Mul(R.vp, R.proj, R.view);
   const wh = waveHeight(c.pos[0], c.pos[2]);
   R.under = c.pos[1] < wh - 0.02;
   R.underAmt = lerp(R.underAmt, R.under ? 1 : 0, 0.2);
-  R.exposure = R.under ? 1.35 : 1.0;
+  R.exposure = (R.under ? 1.35 : 1.0) * (R.night ? 1.3 : 1.0);
   sceneUpdateInstances(R.time);
   PART.update(R.dt);
   gl.viewport(0, 0, R.canvas.width, R.canvas.height);
@@ -237,5 +239,27 @@ function frame(now) {
   FOCUS.update(dt);
   drawScene();
   R.frames++; updateLabels();
+  NIGHT.frame(); if (typeof GAME !== 'undefined') GAME.frame(dt);
   UI.frame(dt);
 }
+
+/* ---------- night mode ---------- */
+const NIGHT = {
+  sunCol: [0.95, 1.08, 1.55], haze: srgb('#1b2a44'), zen: srgb('#0b1633'),
+  set(on, quiet) {
+    R.night = on ? 1 : 0; document.body.classList.toggle('night', !!on);
+    if (on && !R.tex.texNight) R.tex.texNight = buildNightSky(R.quality);
+    R.units[4] = on ? R.tex.texNight : R.tex.texSky;
+    R.sunCol = on ? this.sunCol : SUNCOL; R.haze = on ? this.haze : HAZE; R.zen = on ? this.zen : ZEN;
+    if (on) { if (!this.glow) { this.glow = { x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, life: 1e9, age: 5e8, size: 5, type: 3 }; } this.placeGlow(); if (!PART.list.includes(this.glow)) PART.list.push(this.glow); }
+    else if (this.glow) PART.list = PART.list.filter(p => p !== this.glow);
+    localStorage.setItem('dokdo3d.night', on ? '1' : '0');
+    const b = $('#bNight'); if (b) b.textContent = on ? '☀️' : '🌙';
+    if (!quiet) UI.toast(on ? '🌙 밤이 되었어요. 달빛과 별빛을 즐겨 보세요' : '☀️ 다시 낮이 되었어요');
+  },
+  placeGlow() {
+    const e = SCN.elems.find(x => x.kind === 'light' && !x.hidden); if (!e || !this.glow) return;
+    const c = Math.cos(e.yaw), s = Math.sin(e.yaw); Object.assign(this.glow, { x: e.x + c * 2 * e.s, y: e.y + 13 * e.s, z: e.z - s * 2 * e.s });
+  },
+  frame() { if (R.night && this.glow) this.glow.size = 5 + Math.sin(R.time * 1.6) * 1.6 + (Math.sin(R.time * 0.63) > 0.96 ? 5 : 0); }
+};

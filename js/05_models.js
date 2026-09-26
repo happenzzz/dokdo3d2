@@ -285,7 +285,7 @@ function egretMesh() {
   mb.poly([[-0.15, 0.5, 0.05], [-0.28, 0.46, 0], [-0.15, 0.5, -0.05]], white);
   return mb.build();
 }
-function sealionMesh() {
+function sealionMesh(beret) {
   const mb = new MB(), rings = [], c1 = col('#5a4a3e'), c2 = col('#8a7462');
   const prof = [[0, 0.04], [0.1, 0.18], [0.3, 0.3], [0.5, 0.33], [0.68, 0.27], [0.8, 0.17], [0.88, 0.15], [0.95, 0.12], [1, 0.03]];
   for (const [t, r] of prof) rings.push({ x: -1.1 + t * 2.2, ry: r * 0.9, rz: r, y: t > 0.8 ? (t - 0.8) * 0.8 : 0 });
@@ -296,6 +296,12 @@ function sealionMesh() {
     mb.ellipsoid([1.0, 0.2, s * 0.07], [0.022, 0.022, 0.014], col('#080808'), 6);
   }
   mb.ellipsoid([1.08, 0.13, 0], [0.04, 0.03, 0.035], col('#1a1210'), 6);
+  if (beret === true) {
+    mb.ellipsoid([0.97, 0.3, 0], [0.2, 0.075, 0.21], col('#23408e'), 12);
+    mb.ellipsoid([0.97, 0.38, 0], [0.035, 0.03, 0.035], col('#23408e'), 6);
+    mb.ellipsoid([1.02, 0.33, 0.14], [0.05, 0.035, 0.02], col('#f2e7cf'), 6);
+    mb.poly([[0.86, 0.13, -0.16], [0.86, 0.13, 0.16], [0.78, 0.0, 0]], col('#2c55b8'));
+  }
   return mb.build();
 }
 /* ---------------- plants ---------------- */
@@ -467,5 +473,27 @@ function boatMesh() {
   mb.cyl([-3.2, 0.95, -0.9], [-3.2, 2.9, -0.9], 0.03, 0.025, col('#d8d8d8'), 5);
   mb.at([-3.18, 2.2, -0.9]).panel(0.95, 0.63, 4, 2, ...auv(2, 2, 296, 196), [1, 1, 1], null, true, 0.004);
   mb.at();
+  return mb.build();
+}
+
+/* ---------------- game props ---------------- */
+function jellyMesh() {
+  const mb = new MB(), rings = [];
+  for (let i = 0; i < 9; i++) { const t = i / 8, r = 0.32 * Math.sin(Math.PI * 0.5 * (0.15 + t * 0.85)); rings.push({ x: 0.3 - t * 0.3, ry: r, rz: r }); }
+  mb.at([0, 0, 0], 0, Math.PI / 2, 0).lathe(rings, 14, (t) => V3.lerp(col('#f7d7ef'), col('#c77fc8'), t * 0.6), () => 0); mb.at();
+  for (let k = 0; k < 4; k++) { const a = k / 4 * TAU; mb.ellipsoid([Math.cos(a) * 0.1, 0.12, Math.sin(a) * 0.1], [0.06, 0.03, 0.06], col('#b45ab8'), 6); }
+  for (let k = 0; k < 10; k++) { const a = k / 10 * TAU, r = 0.24; mb.cyl([Math.cos(a) * r, 0.02, Math.sin(a) * r], [Math.cos(a) * r * 1.2, -0.75 - (k % 3) * 0.12, Math.sin(a) * r * 1.2], 0.012, 0.004, col('#f2c6e6'), 4, false, e => e ? 1 : 0.1); }
+  return mb.build();
+}
+function trashMesh() {
+  const mb = new MB();
+  mb.cyl([-0.3, 0, 0], [0.25, 0, 0], 0.11, 0.11, col('#7fc4e8'), 10); mb.cyl([0.25, 0, 0], [0.38, 0, 0], 0.11, 0.045, col('#7fc4e8'), 10); mb.cyl([0.38, 0, 0], [0.44, 0, 0], 0.05, 0.05, col('#e23b3b'), 8);
+  mb.box([0.2, 0.02, 0.45], [0.55, 0.28, 0.4], col('#f2f2ee')); mb.box([-0.35, 0.0, -0.4], [0.5, 0.05, 0.5], col('#ff9a3c'));
+  return mb.build();
+}
+function netMesh() {
+  const mb = new MB(), c = col('#3d7a6a');
+  for (let i = 0; i <= 8; i++) { mb.cyl([-1.6 + i * 0.4, -1.2, 0], [-1.6 + i * 0.4 + Math.sin(i) * 0.1, 1.2, 0], 0.02, 0.02, c, 3, false); mb.cyl([-1.6, -1.2 + i * 0.3, 0], [1.6, -1.2 + i * 0.3 + Math.cos(i) * 0.08, 0], 0.02, 0.02, c, 3, false); }
+  for (const x of [-1.6, 1.6]) for (const y of [-1.2, 1.2]) mb.ellipsoid([x, y, 0], [0.12, 0.12, 0.12], col('#f0b429'), 6);
   return mb.build();
 }

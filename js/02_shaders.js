@@ -4,7 +4,7 @@ const GLSL_COMMON = `
 precision highp float; precision highp int; precision highp sampler2D;
 uniform mat4 uVP; uniform vec3 uCam; uniform float uTime;
 uniform vec3 uSun; uniform vec3 uSunCol; uniform vec3 uHaze; uniform vec3 uZenith;
-uniform float uUnder; uniform float uClarity; uniform vec4 uFocus; uniform float uFocusAmt; uniform float uExposure;
+uniform float uUnder; uniform float uClarity; uniform vec4 uFocus; uniform float uFocusAmt; uniform float uExposure; uniform float uNight;
 uniform vec4 uHInfo; uniform sampler2D uHeight;
 `;
 const GLSL_VCOMMON = GLSL_COMMON + `
@@ -17,7 +17,7 @@ float groundH(vec2 xz){ return textureLod(uHeight,(xz-uHInfo.xy)/uHInfo.zw,0.).r
 const GLSL_FCOMMON = GLSL_COMMON + `
 uniform sampler2D uCaustic; uniform sampler2D uNoise; uniform sampler2D uRockN;
 out vec4 fragColor;
-vec3 underCol(float y){ float d=clamp(-y/42.0,0.0,1.0); return mix(vec3(0.020,0.150,0.180), vec3(0.003,0.022,0.042), d); }
+vec3 underCol(float y){ float d=clamp(-y/42.0,0.0,1.0); return mix(vec3(0.020,0.150,0.180), vec3(0.003,0.022,0.042), d)*mix(1.0,0.30,uNight); }
 vec3 underFog(vec3 dir){
   float up=dir.y*0.5+0.5;
   vec3 c=mix(underCol(-40.0), underCol(-1.0)*1.2, smoothstep(0.15,1.0,up));
@@ -29,7 +29,7 @@ float caust(vec3 p){
   float b=texture(uCaustic,uv*1.37+vec2(0.43,0.17)-uTime*vec2(0.017,-0.012)).r;
   return min(a,b)*1.25;
 }
-vec3 hemi(vec3 n){ return mix(vec3(0.12,0.11,0.095), uZenith*0.75+vec3(0.03,0.035,0.04), n.y*0.5+0.5); }
+vec3 hemi(vec3 n){ vec3 g=mix(vec3(0.12,0.11,0.095),vec3(0.018,0.022,0.036),uNight); vec3 s=mix(uZenith*0.75+vec3(0.03,0.035,0.04),vec3(0.045,0.065,0.13),uNight); return mix(g, s, n.y*0.5+0.5); }
 vec3 lightAtt(float y){ return y<0.0 ? exp(y*vec3(0.20,0.050,0.034)*mix(1.4,0.7,uClarity)) : vec3(1.0); }
 vec3 fogAir(vec3 col, vec3 p){
   vec3 v=p-uCam; float dist=length(v); vec3 dir=v/max(dist,1e-4);
@@ -46,8 +46,8 @@ vec3 fogIt(vec3 col, vec3 p){
   }
   if(p.y<-0.02){
     float L=-p.y/max(-dir.y,0.06);
-    vec3 wc=mix(vec3(0.010,0.105,0.125), vec3(0.018,0.16,0.15), uClarity);
-    col = col*exp(-L*vec3(0.33,0.085,0.065)*mix(1.35,0.6,uClarity));
+    vec3 wc=mix(vec3(0.018,0.200,0.200), vec3(0.003,0.024,0.110), smoothstep(1.5,20.0,-p.y))*mix(0.8,1.1,uClarity);
+    col = col*exp(-L*vec3(0.40,0.120,0.036)*mix(1.35,0.6,uClarity));
     col = mix(col, wc*(0.5+0.5*uSun.y), 1.0-exp(-L*mix(0.17,0.075,uClarity)));
   }
   return fogAir(col,p);
@@ -68,42 +68,67 @@ vec4 triS(sampler2D t, vec3 p, vec3 w, float s){
   return texture(t,p.zy*s)*w.x + texture(t,p.xz*s)*w.y + texture(t,p.xy*s)*w.z;
 #endif
 }
-void rockMat(vec3 p, vec3 ng, out vec3 alb, out vec3 nrm, out float wet){
+/* rock + vegetation material. veg/rtone are baked per vertex on the CPU (cheap). */
+vec4 rockN(vec3 p, vec3 w, float s){
+#ifdef LOW
+  if(w.y>max(w.x,w.z)) return texture(uRockN,p.xz*s);
+  return w.x>w.z ? texture(uRockN,vec2(p.z*s,p.y*s*0.45)) : texture(uRockN,vec2(p.x*s,p.y*s*0.45));
+#else
+  return texture(uRockN,vec2(p.z*s,p.y*s*0.45))*w.x + texture(uRockN,p.xz*s)*w.y + texture(uRockN,vec2(p.x*s,p.y*s*0.45))*w.z;
+#endif
+}
+void rockMat(vec3 p, vec3 ng, float veg, float rtone, out vec3 alb, out vec3 nrm, out float wet, out float vg){
   vec3 w=pow(abs(ng),vec3(4.0)); w/=(w.x+w.y+w.z);
-  vec4 nz=triS(uNoise,p,w,0.0105);
-  vec4 rn=triS(uRockN,p,w,0.06);
+  float cd=length(p-uCam);
+  vec4 nm=texture(uNoise,p.xz*0.0105+vec2(p.y*0.004,0.0));
+  vec4 rn=rockN(p,w,0.06);
   vec2 d=rn.xy*2.0-1.0;
 #ifndef LOW
-  float cd=length(p-uCam);
-  if(cd<60.0){ vec4 r2=triS(uRockN,p+17.3,w,0.29); d=mix(d, d*0.6+(r2.xy*2.0-1.0)*0.7, smoothstep(60.0,15.0,cd)); rn.z=mix(rn.z, rn.z*0.6+r2.z*0.4, smoothstep(60.0,15.0,cd)); }
+  if(cd<70.0){ vec4 r2=rockN(p+17.3,w,0.31); float k=smoothstep(70.0,14.0,cd); d=mix(d, d*0.55+(r2.xy*2.0-1.0)*0.95, k); rn.z=mix(rn.z, rn.z*0.55+r2.z*0.45, k); rn.w=max(rn.w, r2.w*0.7*k); }
 #endif
   vec3 pert=vec3(0.0,d.y,d.x)*w.x+vec3(d.x,0.0,d.y)*w.y+vec3(d.x,d.y,0.0)*w.z;
-  nrm=normalize(ng+pert*0.85);
-  float h=p.y;
-  float strata=sin(h*0.62+nz.r*7.0)*0.5+0.5;
-  float strata2=sin(h*2.4+nz.g*5.0)*0.5+0.5;
-  vec3 c=mix(vec3(0.115,0.088,0.068), vec3(0.235,0.180,0.128), strata);
-  c=mix(c, vec3(0.16,0.155,0.145), smoothstep(0.45,0.82,nz.b)*0.6);
-  c=mix(c, vec3(0.30,0.150,0.075), smoothstep(0.58,0.86,nz.g)*0.6*strata2);
-  c=mix(c, vec3(0.055,0.050,0.048), smoothstep(0.60,0.82,nz.r)*0.75);
-  c*=0.62+0.75*rn.z; c*=mix(1.0,0.55,rn.w);
-  float steep=1.0-abs(ng.y);
-  float streak=texture(uNoise,vec2(p.x*0.045+p.z*0.045,p.y*0.005)).g;
-  float guano=smoothstep(0.68,0.85,streak)*steep*smoothstep(7.0,22.0,h)*smoothstep(0.5,0.75,nz.a);
-  c=mix(c, vec3(0.42,0.41,0.37), guano*0.45);
-  float g=smoothstep(0.74,0.92,ng.y)*smoothstep(9.0,24.0,h)*smoothstep(0.32,0.62,nz.g+rn.z*0.25);
-  vec3 grass=mix(vec3(0.05,0.085,0.02), vec3(0.14,0.16,0.045), nz.b);
-  c=mix(c, grass*(0.75+0.5*rn.z), g);
-  float wl=1.3+nz.r*1.0+sin(uTime*0.6+p.x*0.05)*0.25;
-  wet=smoothstep(wl,-0.2,h);
-  c=mix(c, c*0.42+vec3(0.0,0.010,0.007), wet);
-  float barn=smoothstep(1.4,0.7,h)*smoothstep(-0.3,0.3,h)*smoothstep(0.5,0.72,rn.z)*0.55;
+  float h=p.y, steep=1.0-abs(ng.y);
+  /* volcanic rock: dark basalt -> brown tuff -> pale weathered tuff, plus iron-oxide stains */
+  float t=clamp(rtone+(nm.r-0.5)*0.35,0.0,1.0);
+  vec3 c=mix(vec3(0.040,0.037,0.034), vec3(0.128,0.108,0.088), smoothstep(0.0,0.55,t));
+  c=mix(c, vec3(0.235,0.215,0.185), smoothstep(0.55,1.0,t));
+  c=mix(c, vec3(0.180,0.090,0.050), smoothstep(0.60,0.86,nm.g)*0.40);
+  c*=0.93+0.10*sin(h*0.9+nm.b*6.0)*steep;
+  c*=0.5+1.0*rn.z*rn.z+0.1*rn.z; c*=mix(1.0,0.4,rn.w);
+  float guano=smoothstep(0.72,0.9,nm.a)*steep*smoothstep(6.0,20.0,h)*smoothstep(0.55,0.8,rn.z);
+  c=mix(c, vec3(0.46,0.45,0.41), guano*0.4);
+  float lich=smoothstep(0.64,0.82,nm.a*0.55+rn.z*0.6)*smoothstep(1.8,4.5,h)*smoothstep(32.0,10.0,h);
+  c=mix(c, mix(vec3(0.27,0.17,0.045), vec3(0.30,0.29,0.25), nm.g), lich*0.32);
+  nrm=normalize(ng+pert*1.2);
+  /* vegetation: baked coverage + two cheap planar breakups */
+  vg=0.0;
+  if(veg>0.01){
+    float vb=texture(uNoise,p.xz*0.047).g, vf=texture(uNoise,p.xz*0.27+0.31).b;
+    vg=smoothstep(0.16,0.46,veg+(vb-0.5)*0.45+(vf-0.5)*0.3*smoothstep(160.0,40.0,cd));
+    vec3 gDark=vec3(0.016,0.040,0.010), gLight=vec3(0.052,0.110,0.020), gDry=vec3(0.105,0.100,0.045);
+    vec3 gc=mix(gDark, gLight, smoothstep(0.25,0.8,vf*0.6+vb*0.5+ng.y*0.3-0.2));
+    gc=mix(gc, vec3(0.060,0.075,0.025), smoothstep(0.45,0.75,nm.g)*0.5);
+    gc=mix(gc, gDry, smoothstep(0.66,0.88,nm.b)*0.5);
+    gc*=0.7+0.55*vf*vf+0.1*rn.z;
+    vec3 gn=vec3(vf-0.5,0.0,vb-0.5)*0.6;
+#ifndef LOW
+    if(cd<42.0){ vec4 gd=texture(uNoise,p.xz*1.15+vec2(p.y*0.35,0.0)); float k=smoothstep(42.0,6.0,cd); gc*=mix(1.0,0.55+0.9*gd.r*gd.g+0.25*gd.b,k); gn+=vec3(gd.g-0.5,0.0,gd.b-0.5)*0.9*k; }
+#endif
+    c=mix(c, gc, vg);
+    nrm=normalize(mix(nrm, normalize(ng+gn), vg));
+  }
+  /* waterline: wet dark band, barnacles, then seabed */
+  float wl=1.2+nm.r*1.1+sin(uTime*0.6+p.x*0.05)*0.25;
+  wet=smoothstep(wl,-0.2,h)*(1.0-vg);
+  c=mix(c, c*0.40+vec3(0.0,0.010,0.007), wet);
+  float barn=smoothstep(1.4,0.7,h)*smoothstep(-0.3,0.3,h)*smoothstep(0.5,0.72,rn.z)*0.5;
   c=mix(c, vec3(0.40,0.39,0.35), barn);
   if(h<-0.3){
     float u=smoothstep(-0.3,-2.2,h);
-    vec3 uc=mix(c*0.85, vec3(0.50,0.27,0.30), smoothstep(0.42,0.68,nz.g)*0.65);
-    uc=mix(uc, vec3(0.11,0.095,0.025), smoothstep(0.5,0.78,nz.b)*0.6*smoothstep(-28.0,-3.0,h));
-    uc=mix(uc, vec3(0.46,0.40,0.28)*(0.8+0.35*rn.z), smoothstep(0.8,0.95,ng.y)*smoothstep(0.35,0.6,nz.r));
+    vec3 uc=mix(c*0.8, vec3(0.50,0.27,0.30), smoothstep(0.42,0.68,nm.g)*0.6);
+    uc=mix(uc, vec3(0.11,0.095,0.025), smoothstep(0.5,0.78,nm.b)*0.55*smoothstep(-28.0,-3.0,h));
+    float sand=smoothstep(0.72,0.93,ng.y)*smoothstep(0.28,0.55,nm.r)*smoothstep(-26.0,-2.0,h);
+    uc=mix(uc, vec3(0.52,0.47,0.35)*(0.8+0.3*rn.z), sand);
     c=mix(c,uc,u);
   }
   alb=c;
@@ -113,16 +138,16 @@ void rockMat(vec3 p, vec3 ng, out vec3 alb, out vec3 nrm, out float wet){
 const SHADERS = {};
 SHADERS.terrainV = GLSL_VCOMMON + `
 layout(location=0) in vec3 aPos; layout(location=1) in vec4 aNrm; layout(location=2) in vec4 aShade;
-out vec3 vP; out vec3 vN; out vec2 vS;
-void main(){ vP=aPos; vN=aNrm.xyz; vS=aShade.xy; gl_Position=wobble(uVP*vec4(aPos,1.0)); }`;
+out vec3 vP; out vec3 vN; out vec4 vS;
+void main(){ vP=aPos; vN=aNrm.xyz; vS=aShade; gl_Position=wobble(uVP*vec4(aPos,1.0)); }`;
 SHADERS.terrainF = GLSL_FCOMMON + `
-in vec3 vP; in vec3 vN; in vec2 vS; uniform vec4 uBrush;
+in vec3 vP; in vec3 vN; in vec4 vS; uniform vec4 uBrush;
 void main(){
-  vec3 ng=normalize(vN); vec3 alb, n; float wet;
-  rockMat(vP, ng, alb, n, wet);
-  float ndl=max(dot(n,uSun),0.0); float sh=vS.x; vec3 att=lightAtt(vP.y);
+  vec3 ng=normalize(vN); vec3 alb, n; float wet, vg;
+  rockMat(vP, ng, vS.z, vS.w, alb, n, wet, vg);
+  float ndl=mix(max(dot(n,uSun),0.0), clamp((dot(n,uSun)+0.35)/1.35,0.0,1.0), vg); float sh=vS.x; vec3 att=lightAtt(vP.y);
   vec3 V=normalize(uCam-vP); vec3 H=normalize(uSun+V);
-  float spec=pow(max(dot(n,H),0.0),mix(10.0,70.0,wet))*(0.04+wet*0.5)*sh;
+  float spec=pow(max(dot(n,H),0.0),mix(10.0,70.0,wet))*(0.04+wet*0.5)*sh*(1.0-vg*0.8);
   vec3 col=alb*(uSunCol*ndl*sh*att + hemi(n)*vS.y*mix(vec3(1.0),vec3(0.35,0.8,0.95),step(vP.y,0.0))*att) + uSunCol*spec*att;
   if(vP.y<0.4){ col += alb*uSunCol*caust(vP)*smoothstep(0.4,-1.2,vP.y)*att*ndl*sh*1.3; }
   if(uBrush.w>0.0){ float d=length(vP.xz-uBrush.xz); float r=smoothstep(uBrush.w-1.2,uBrush.w,d)*smoothstep(uBrush.w+1.2,uBrush.w,d); col=mix(col,vec3(0.7,0.55,1.0),r*0.85); col+=vec3(0.05,0.03,0.09)*step(d,uBrush.w); }
@@ -162,7 +187,7 @@ uniform int uMat; uniform float uTwoSided; uniform sampler2D uTex; uniform float
 void main(){
   vec3 N=normalize(vN); if(uTwoSided>0.5 && !gl_FrontFacing) N=-N;
   vec3 alb=vCol.rgb; vec3 n=N; float wet=0.0; float ao=vCol.a;
-  if(uMat==1){ rockMat(vW,N,alb,n,wet); }
+  if(uMat==1){ float vg; rockMat(vW,N,vCol.g,vCol.r,alb,n,wet,vg); }
   else if(vExt.y>0.5){ alb=texture(uTex,vExt.zw).rgb; }
   vec2 huv=(vW.xz-uHInfo.xy)/uHInfo.zw; vec4 hs=texture(uHeight,huv); float gh=hs.r*90.0-45.0;
   float sh=mix(1.0, hs.g, 1.0-smoothstep(gh+2.5,gh+7.0,vW.y));
@@ -245,7 +270,7 @@ void main(){
     vec3 scatter=mix(vec3(0.008,0.09,0.11), vec3(0.02,0.22,0.21), smoothstep(12.0,1.0,depth))*uWaterTint;
     float a=clamp(fres+0.06+length(sss)*0.4,0.0,1.0);
     vec3 col=(sky*fres+scatter*0.06+sss)/max(a,0.001) + uSunCol*sp;
-    vec3 fc=vec3(0.86,0.92,0.92)*(0.55+0.55*max(uSun.y,0.0));
+    vec3 fc=vec3(0.86,0.92,0.92)*(0.55+0.55*max(uSun.y,0.0))*mix(1.0,0.28,uNight);
     col=mix(col,fc,foam); a=clamp(a+foam*0.95+sp,0.0,1.0);
     col=fogAir(col,vW); col=focusIt(col,vW);
     fragColor=vec4(tone(col),a);
@@ -279,7 +304,7 @@ void main(){
   } else {
     col=textureLod(uSky,eqUV(d),0.0).rgb;
     float s=max(dot(d,uSun),0.0);
-    col+=uSunCol*smoothstep(0.99955,0.99975,s)*14.0;
+    col+=uSunCol*smoothstep(mix(0.99955,0.99925,uNight),mix(0.99975,0.99945,uNight),s)*mix(14.0,2.2,uNight);
     col=mix(col,uHaze,(1.0-smoothstep(0.0,0.16,abs(d.y)))*0.5);
   }
   fragColor=vec4(tone(col),1.0);

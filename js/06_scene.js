@@ -18,7 +18,7 @@ const KINDS = {
   peninsula: R_('한반도바위', '동도 북동쪽', '바위 모양이 한반도를 닮았다고 해서 붙은 이름이에요.', '독도에는 생김새를 따서 이름 붙인 바위가 아주 많아요.', 'peninsula'),
   rock: R_('바위', '독도 바다', '파도에 깎인 바위예요.', '독도는 동도·서도와 89개의 작은 부속 섬으로 이루어져 있어요.', 'generic', { label: false }),
 
-  damsel: K({ name: '자리돔', group: 'fish', icon: '🐟', mesh: () => FISH.damsel(), anim: 1, animP: [9, 14, 0.035, 0], beh: 'school', n: 36, spread: 5, s: 1.3, r: 0.25, where: '독도 바닷속 곳곳', place: 'water', desc: '손가락만 한 작은 물고기로 수백 마리가 떼를 지어 다녀요. 꼬리 쪽에 흰 점이 있어요.', fact: '독도 바닷속에서 가장 흔하게 볼 수 있는 물고기 중 하나예요.' }),
+  damsel: K({ name: '자리돔', group: 'fish', icon: '🐟', mesh: () => FISH.damsel(), anim: 1, animP: [9, 14, 0.035, 0], beh: 'school', n: 40, spread: 5, s: 1.6, r: 0.25, where: '독도 바닷속 곳곳', place: 'water', desc: '손가락만 한 작은 물고기로 수백 마리가 떼를 지어 다녀요. 꼬리 쪽에 흰 점이 있어요.', fact: '독도 바닷속에서 가장 흔하게 볼 수 있는 물고기 중 하나예요.' }),
   bluedam: K({ name: '파랑돔', group: 'fish', icon: '🐠', mesh: () => FISH.blue(), anim: 1, animP: [10, 18, 0.03, 0], beh: 'school', n: 14, spread: 3, s: 1.5, r: 0.2, gloss: 0.3, where: '동도 남쪽 바다', place: 'water', desc: '몸은 파랗게 빛나고 배와 꼬리는 노란 작은 물고기예요.', fact: '원래 따뜻한 남쪽 바다에 사는 물고기예요. 독도에서 보이는 것은 바다가 따뜻해지고 있다는 신호예요.' }),
   hump: K({ name: '혹돔', group: 'fish', icon: '🐟', mesh: () => FISH.hump(), anim: 1, animP: [4, 4, 0.08, 0], beh: 'swim', n: 2, spread: 12, s: 1, r: 0.6, where: '바위 굴 근처', place: 'water', desc: '이마에 커다란 혹이 볼록 튀어나온 물고기예요. 1m 가까이 자라요.', fact: '자라면서 이마의 혹이 점점 커져요. 낮에는 바위 굴에 숨어 있기도 해요.' }),
   stone: K({ name: '돌돔', group: 'fish', icon: '🐟', mesh: () => FISH.stone(), anim: 1, animP: [6, 7, 0.05, 0], beh: 'swim', n: 4, spread: 10, s: 1, r: 0.35, where: '바위가 많은 바다', place: 'water', desc: '몸에 굵은 검은 줄무늬가 있는 물고기예요.', fact: '튼튼한 이빨로 성게나 소라 껍데기도 부숴 먹어요.' }),
@@ -35,8 +35,8 @@ const KINDS = {
   hydrate: K({ name: '메탄 하이드레이트', group: 'res', icon: '💎', mesh: hydrateMesh, mat: 3, emis: 0.5, gloss: 0.8, beh: 'plume', s: 1.4, r: 1.6, where: '독도 주변 깊은 바다 밑 (모형)', place: 'seabed', desc: '천연가스가 물과 얼어붙은 얼음 같은 물질로, 불을 붙이면 타서 불타는 얼음이라고 불러요.', fact: '독도 주변 깊은 바다 밑에 약 6억 톤이 묻혀 있을 것으로 추정되는 미래 에너지 자원이에요. 실제로는 수심 2,000m 가까운 곳에 있어요.' }),
   sealion: K({ name: '강치 (과거 복원)', group: 'res', icon: '🦭', mesh: sealionMesh, anim: 6, animP: [1.2, 2, 0.05, 0], beh: 'rest', s: 1, r: 1.1, gloss: 0.35, where: '가제바위 (과거)', place: 'ground', desc: '독도에 수만 마리가 살던 바다사자예요. 지금은 볼 수 없어서 옛 모습을 되살려 보여 줘요.', fact: '일제강점기에 일본 어부들이 가죽과 기름을 얻으려고 마구 잡아서 독도에서 사라졌어요.' }),
 
-  gull: K({ name: '괭이갈매기', group: 'bird', icon: '🕊️', mesh: () => gullMesh(false), anim: 2, animP: [7, 0.16, 0, 0], two: 1, beh: 'fly', n: 10, spread: 45, s: 1.4, r: 0.5, where: '독도 하늘과 절벽', place: 'air', desc: '울음소리가 고양이(괭이)처럼 "냐오~" 들려서 괭이갈매기예요. 부리 끝에 빨간 점과 검은 띠가 있어요.', fact: '봄부터 여름까지 수만 마리가 독도에서 알을 낳고 새끼를 키워요. 독도를 대표하는 새예요.' }),
-  gullsit: K({ name: '괭이갈매기 (쉬는 중)', group: 'bird', icon: '🕊️', mesh: () => gullMesh(true), beh: 'patch', n: 10, spread: 12, s: 1.4, r: 0.35, where: '동도 절벽 위', place: 'ground', desc: '절벽 위에서 쉬거나 알을 품고 있는 괭이갈매기예요.', fact: '괭이갈매기는 해마다 같은 곳에 돌아와 둥지를 트는 경우가 많아요.' }),
+  gull: K({ name: '괭이갈매기', group: 'bird', icon: '🕊️', mesh: () => gullMesh(false), anim: 2, animP: [7, 0.16, 0, 0], two: 1, beh: 'fly', n: 14, spread: 38, s: 1.7, r: 0.5, where: '독도 하늘과 절벽', place: 'air', desc: '울음소리가 고양이(괭이)처럼 "냐오~" 들려서 괭이갈매기예요. 부리 끝에 빨간 점과 검은 띠가 있어요.', fact: '봄부터 여름까지 수만 마리가 독도에서 알을 낳고 새끼를 키워요. 독도를 대표하는 새예요.' }),
+  gullsit: K({ name: '괭이갈매기 (쉬는 중)', group: 'bird', icon: '🕊️', mesh: () => gullMesh(true), beh: 'patch', n: 14, spread: 14, s: 1.6, r: 0.35, where: '동도 절벽 위', place: 'ground', desc: '절벽 위에서 쉬거나 알을 품고 있는 괭이갈매기예요.', fact: '괭이갈매기는 해마다 같은 곳에 돌아와 둥지를 트는 경우가 많아요.' }),
   petrel: K({ name: '바다제비', group: 'bird', icon: '🐦', mesh: petrelMesh, anim: 2, animP: [10, 0.12, 0, 0], two: 1, beh: 'fly', n: 6, spread: 30, s: 1.6, r: 0.3, where: '서도와 바다 위', place: 'air', desc: '몸이 작고 짙은 갈색인 바다새예요. 제비처럼 날렵하게 바다 위를 날아요.', fact: '독도에서 굴을 파고 알을 낳아요. 낮에는 먼 바다에서 먹이를 찾고 밤에 둥지로 돌아와요.' }),
   egret: K({ name: '황로', group: 'bird', icon: '🦩', mesh: egretMesh, beh: 'patch', n: 3, spread: 4, s: 1.3, r: 0.5, where: '선착장 근처', place: 'ground', desc: '하얀 몸에 머리와 목이 주황빛을 띠는 백로 무리의 새예요.', fact: '독도는 먼 바다를 건너는 철새들이 잠시 쉬어 가는 쉼터예요.' }),
 
@@ -58,6 +58,10 @@ const KINDS = {
   spring: K({ name: '물골', group: 'fac', icon: '💧', mesh: FAC.spring, beh: 'static', r: 3, where: '서도 북서쪽', place: 'ground', desc: '서도의 바위틈에서 물이 조금씩 고이는 샘이에요.', fact: '바닷물로 둘러싸인 독도에서 사람이 마실 수 있는 물을 얻을 수 있는 귀한 곳이에요.' }),
   bench: K({ name: '국가기준점', group: 'fac', icon: '📍', mesh: FAC.benchmark, beh: 'static', r: 0.8, where: '동도', place: 'ground', desc: '땅의 위치와 높이를 정확하게 재는 기준이 되는 표시예요.', fact: '지도를 만들 때 이런 기준점을 바탕으로 위치를 재요.' }),
   camera: K({ name: 'KBS 카메라', group: 'fac', icon: '📹', mesh: FAC.camera, beh: 'static', r: 2.5, where: '동도', place: 'ground', desc: '독도의 모습을 찍어 방송으로 보여 주는 카메라예요.', fact: '멀리 있어도 카메라 덕분에 독도의 날씨와 바다를 볼 수 있어요.' }),
+  jelly: K({ name: '해파리', group: 'sea', icon: '🪼', mesh: jellyMesh, mat: 2, alpha: 0.55, gloss: 0.5, anim: 5, animP: [2, 0.05, 0, 0], beh: 'swim', n: 7, spread: 9, s: 2.2, r: 0.35, where: '바닷물 위쪽', place: 'water', desc: '우산처럼 생긴 몸을 오므렸다 폈다 하며 떠다니는 동물이에요. 여름이면 독도 바다에서 보름달물해파리를 자주 볼 수 있어요.', fact: '촉수에 독이 있는 해파리도 있으니 바다에서 만나면 만지지 말고 피해야 해요.' }),
+  trash: K({ name: '바다 쓰레기', group: 'res', icon: '🧴', mesh: trashMesh, beh: 'static', r: 0.6, place: 'sea', game: true, desc: '', fact: '' }),
+  net: K({ name: '버려진 그물', group: 'res', icon: '🕸️', mesh: netMesh, two: 1, beh: 'static', r: 1.6, place: 'water', game: true, desc: '', fact: '' }),
+  racer: K({ name: '강치 가이드', group: 'res', icon: '🦭', mesh: () => sealionMesh(true), anim: 6, animP: [3.2, 2, 0.09, 0], beh: 'static', r: 1.1, gloss: 0.35, place: 'water', game: true, desc: '', fact: '' }),
   boat: K({ name: '탐험 보트', group: 'fac', icon: '🚤', mesh: boatMesh, beh: 'boat', two: 1, r: 4.2, gloss: 0.35, label: true, where: '동도 선착장 앞바다', place: 'sea', desc: '독도 둘레를 돌아볼 수 있는 작은 보트예요. 탐험가 모드에서 〈배 타기〉를 누르면 직접 운전할 수 있어요.', fact: '실제로 독도에 가려면 울릉도에서 여객선을 타고 1시간 30분 정도 바다를 건너야 해요.' }),
   alpine: K({ name: '산악회 표석', group: 'fac', icon: '🪨', mesh: FAC.stone, beh: 'static', r: 1, where: '동도', place: 'ground', desc: '한국산악회가 독도를 조사하고 세운 표석이에요.', fact: '광복 뒤 여러 차례 독도 학술 조사가 이루어졌어요.' })
 };
@@ -78,6 +82,13 @@ const DEFAULT_ELEMS = [
   ['flag', 208, 0, 184, 0.4], ['flag', 205, 0, 41, 0.4], ['post', 204, 0, 45, -0.5], ['inscr', 199, 0, 42, 2.4], ['territory', 169, 0, 75, 0.3],
   ['sign1', 188, 0, 184, 0.1], ['sign2', -116, 0, 40, 1.4], ['spring', -312, 0, -166, 0.6], ['bench', 220, 0, -10, 0], ['bench', 181, 0, 185, 0],
   ['camera', 226, 0, -15, 2.4], ['alpine', 278, 0, 100, 0], ['boat', 208, 0, 205, 0],
+  ['gull', 205, 20, 200, 0], ['gull', 60, 28, 150, 0], ['gull', -120, 32, 100, 0], ['gull', -300, 45, -150, 0], ['gull', 300, 24, 20, 0], ['gull', -40, 18, 10, 0], ['gull', -200, 60, -240, 0],
+  ['gullsit', 240, 0, 60, 0], ['gullsit', -250, 0, -100, 0], ['gullsit', -200, 0, 20, 0], ['gullsit', 60, 0, 40, 0], ['gullsit', 200, 0, 150, 0], ['gullsit', -300, 0, -40, 0],
+  ['petrel', 20, 18, -60, 0], ['petrel', 250, 20, -60, 0],
+  ['damsel', 215, -4, 218, 0], ['damsel', 120, -5, 215, 0], ['damsel', -100, -5, 140, 0], ['damsel', -240, -6, 120, 0], ['damsel', 300, -6, 120, 0], ['damsel', 60, -5, -120, 0], ['damsel', -200, -6, -200, 0], ['damsel', -330, -6, -60, 0],
+  ['bluedam', 200, -4, 225, 0], ['bluedam', -60, -4, 60, 0], ['hump', -60, -8, -60, 0], ['stone', 190, -6, 222, 0], ['stone', 330, -6, 40, 0], ['squid', 150, -8, 260, 0], ['squid', -300, -9, 80, 0],
+  ['jelly', 180, -2, 240, 0], ['jelly', -80, -2, 160, 0], ['jelly', -330, -2, -120, 0], ['jelly', 310, -2, -60, 0],
+  ['kelp', 210, 0, 225, 0], ['kelp', -110, 0, 150, 0], ['urchin', 205, 0, 222, 0], ['star', 195, 0, 220, 0], ['shrimp', 150, 0, 250, 0], ['abalone', 215, 0, 212, 0],
   ['damsel', -40, -6, 40, 0], ['damsel', 20, -5, 118, 0], ['damsel', -60, -6, -40, 0], ['damsel', 180, -5, 212, 0], ['bluedam', 255, -5, 214, 0], ['bluedam', -150, -4, 122, 0],
   ['hump', 255, -8, 222, 0], ['hump', -200, -8, 150, 0], ['stone', -150, -6, 125, 0], ['stone', 25, -6, 125, 0], ['squid', -20, -9, -80, 0],
   ['shrimp', 0, 0, -150, 0], ['shrimp', -40, 0, 45, 0], ['urchin', -35, 0, 30, 0], ['urchin', 30, 0, 118, 0], ['urchin', -155, 0, 118, 0], ['urchin', 170, 0, 208, 0],
@@ -102,7 +113,15 @@ function newElem(kind, x, y, z, yaw = 0, s = 1) {
   const e = { uid: SCN.uid++, kind, x, y, z, yaw, s, hidden: false, frozen: false, ft: 0, sub: [] };
   layoutElem(e); return e;
 }
-function groundY(x, z) { return TER.heightAt(x, z); }
+function groundY(x, z) {
+  let h = TER.heightAt(x, z);
+  for (const q of SCN.elems) { // standing on the quay deck, not under it
+    if (q.kind !== 'quay' || q.hidden) continue;
+    const c = Math.cos(q.yaw), sn = Math.sin(q.yaw), dx = x - q.x, dz = z - q.z, lx = (c * dx - sn * dz) / q.s, lz = (sn * dx + c * dz) / q.s;
+    if (Math.abs(lx) < 16.5 && lz > 2.3 && lz < 13.7) h = Math.max(h, q.y + 2.5 * q.s);
+  }
+  return h;
+}
 function layoutElem(e) {
   const k = KINDS[e.kind], rnd = makeRand(e.uid * 977 + 13); e.sub = [];
   if (k.place === 'ground' && k.beh === 'static') e.y = Math.max(groundY(e.x, e.z), 0.2);
@@ -190,6 +209,9 @@ function sceneUpdateInstances(T) {
     const arr = bufs[e.kind] || (bufs[e.kind] = []);
     elemInstances(e, T, (x, y, z, s, yaw, pitch, roll, ph) => arr.push(x, y, z, s, yaw, pitch, roll, ph, sel, fz, e.ft, flap));
   }
+  const add = (kind, x, y, z, s, yaw, pitch, roll, ph) => (bufs[kind] || (bufs[kind] = [])).push(x, y, z, s, yaw, pitch, roll, ph, 0, 0, 0, 1);
+  AMBIENT.instances(T, add);
+  if (typeof GAME !== 'undefined' && GAME.on) GAME.instances(T, add);
   for (const [id, m] of Object.entries(SCN.meshes)) {
     const a = bufs[id]; m.n = a ? a.length / 12 : 0; if (!m.n) continue;
     if (m.inst.length < a.length) m.inst = new Float32Array(Math.max(a.length, m.inst.length * 2));
@@ -241,3 +263,25 @@ function areaAt(p) {
   if (Math.hypot(p[0] - 102, (p[2] - 68) * 1.15) < 24) return 'cheonjang';
   return p[0] > -20 ? 'dongdo' : 'seodo';
 }
+
+/* ambient life that keeps company with the explorer: gulls overhead, fish around the diver */
+const AMBIENT = {
+  gulls: Array.from({ length: 7 }, (_, i) => ({ r: 10 + i * 2.6, h: 7 + (i % 3) * 3, w: 0.35 + (i % 4) * 0.07, ph: i * 1.7, dir: i % 2 ? 1 : -1 })),
+  fish: Array.from({ length: 26 }, (_, i) => ({ r: 4 + (i % 7) * 0.9, h: ((i * 37) % 11) / 11 - 0.5, ph: i * 0.61, w: 0.28 + (i % 5) * 0.03 })),
+  center: null,
+  instances(T, add) {
+    const m = MODE.cur; if (m !== 'explorer' && m !== 'game') { this.center = null; return; }
+    const c = R.cam.pos; this.center = this.center ? V3.lerp(this.center, c, 0.02) : c.slice();
+    const C = this.center, wh = 0;
+    if (!R.under) for (const g of this.gulls) {
+      const a = T * g.w * g.dir + g.ph, x = C[0] + Math.cos(a) * g.r, z = C[2] + Math.sin(a) * g.r;
+      const y = Math.max(TER.heightAt(x, z), wh) + g.h + Math.sin(T * 0.5 + g.ph) * 1.5;
+      add('gull', x, y, z, 1.6, Math.atan2(-Math.cos(a) * g.dir, -Math.sin(a) * g.dir), 0.05, -g.dir * 0.3, g.ph);
+    }
+    if (c[1] < 1.5) for (const f of this.fish) {
+      const a = T * f.w + f.ph, x = C[0] + Math.cos(a) * f.r, z = C[2] + Math.sin(a) * f.r * 0.8, g = TER.heightAt(x, z);
+      const y = clamp(Math.min(c[1], -1.5) + f.h * 3 + Math.sin(T + f.ph) * 0.4, g + 0.8, -1);
+      add('damsel', x, y, z, 1.7, Math.atan2(-Math.cos(a) * 0.8, -Math.sin(a)), 0, 0, f.ph);
+    }
+  }
+};

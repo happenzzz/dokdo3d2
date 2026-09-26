@@ -24,6 +24,8 @@ dokdo-3d/
 │  └─ 11_tour.js         관광 모드 (강치 가이드)
 ├─ assets/
 │  ├─ guide/             강치 가이드 그림 (webp)
+│  ├─ loader/            시작 로딩 화면 그림 3장 + 학교 이름 (webp)
+│  ├─ loader/            로딩 화면 그림 3장 + 학교 이름 (webp)
 │  └─ favicon.svg
 ├─ _headers              Cloudflare Pages 캐시 설정
 └─ README.md

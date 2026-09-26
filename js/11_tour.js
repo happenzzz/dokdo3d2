@@ -30,6 +30,7 @@ const TOUR_STOPS = [
     text: '고양이처럼 우는 괭이갈매기가 날아다니는 독도의 하늘이에요. 오늘 관광 어땠나요? 이제 탐험가 모드에서 직접 걸어 보거나, 퀴즈로 독도 박사에 도전해 보세요!' }
 ];
 const TOUR = {
+  stops: TOUR_STOPS, course: 'place',
   i: 0, fly: null, auto: false, voice: false, spin: true, typing: null, built: false,
   build() {
     if (this.built) return; this.built = true;
@@ -38,27 +39,57 @@ const TOUR = {
     $('#tourText').onclick = () => { if (this.typing) this.finishTyping(); };
     $('#tourVoice').onclick = e => { this.voice = !this.voice; e.currentTarget.classList.toggle('on', this.voice); if (this.voice) this.speak(); else if (window.speechSynthesis) speechSynthesis.cancel(); };
     $('#tourAuto').onclick = e => { this.auto = !this.auto; e.currentTarget.classList.toggle('on', this.auto); if (this.auto && !this.fly && !this.typing) this.scheduleNext(); else clearTimeout(this.autoT); };
-    $('#tourDots').innerHTML = TOUR_STOPS.map((s, i) => `<button data-i="${i}" aria-label="${s.title}"></button>`).join('');
-    $$('#tourDots button').forEach(b => b.onclick = () => this.go(+b.dataset.i));
+    this.renderDots();
+    $$('#tourCourse button').forEach(b => b.onclick = () => { AUDIO.unlock(); this.setCourse(b.dataset.c); });
     $('#tourAgain').onclick = () => this.go(0); $('#tourToExp').onclick = () => MODE.set('explorer'); $('#tourToQuiz').onclick = () => MODE.set('quiz');
     this.drawMapBase();
     addEventListener('keydown', e => { if (MODE.cur !== 'tour') return; if (e.code === 'ArrowRight') $('#tourNext').click(); if (e.code === 'ArrowLeft') $('#tourPrev').click(); });
   },
+  renderDots() {
+    $('#tourDots').innerHTML = this.stops.map((s, i) => `<button data-i="${i}" aria-label="${s.title}"></button>`).join('');
+    $$('#tourDots button').forEach(b => b.onclick = () => this.go(+b.dataset.i));
+    $('#tourDots').classList.toggle('many', this.stops.length > 16);
+  },
+  setCourse(c) {
+    if (c === this.course && this.arrived) return;
+    this.course = c; this.stops = c === 'life' ? lifeStops() : TOUR_STOPS; this.i = 0; this.arrived = false;
+    $$('#tourCourse button').forEach(b => b.classList.toggle('on', b.dataset.c === c));
+    this.renderDots(); this.go(0, true);
+  },
+  follow(dt) {
+    const s = this.stops[this.i]; if (!s || !s.kind || !this.arrived) return;
+    const e = this.target; if (!e || e.hidden) return;
+    const fc = elemFocus(e, R.time); OBS.t = V3.lerp(OBS.t, fc.c, Math.min(1, dt * 1.2));
+  },
   open() { this.build(); document.body.classList.add('touring'); this.go(this.i, true); },
   close() { this.fly = null; R.speedFx = 0; clearTimeout(this.autoT); clearInterval(this.typing); this.typing = null; if (window.speechSynthesis) speechSynthesis.cancel(); document.body.classList.remove('touring', 'tour-flying'); },
-  pose(s) { const y = s.t[1] === null ? TER.heightAt(s.t[0], s.t[2]) + (s.yo || 0) : s.t[1]; return { t: [s.t[0], y, s.t[2]], d: s.d, yaw: s.yaw, pitch: s.pitch }; },
+  pose(s) {
+    if (s.kind) {
+      const list = SCN.elems.filter(e => e.kind === s.kind && !e.hidden), c = R.cam.pos;
+      const e = s.pick === 'near' ? list.sort((a, b) => Math.hypot(a.x - c[0], a.z - c[2]) - Math.hypot(b.x - c[0], b.z - c[2]))[0] : list[s.pick || 0] || list[0];
+      this.target = e;
+      if (e) {
+        const fc = elemFocus(e, R.time), under = fc.c[1] < -0.5, air = fc.c[1] > 8 && KINDS[s.kind].beh === 'fly';
+        const d = clamp(fc.r * 3.4, under ? 5 : 7, under ? 16 : 70) + (under ? 1.5 : air ? 18 : 6);
+        const dir = V3.sub(fc.c, c), yaw = Math.hypot(dir[0], dir[2]) > 1 ? Math.atan2(dir[0], -dir[2]) : OBS.yaw;
+        return { t: fc.c, d, yaw, pitch: under ? -0.1 : air ? -0.05 : -0.38 };
+      }
+    }
+    this.target = null;
+    const y = s.t[1] === null ? TER.heightAt(s.t[0], s.t[2]) + (s.yo || 0) : s.t[1]; return { t: [s.t[0], y, s.t[2]], d: s.d, yaw: s.yaw, pitch: s.pitch };
+  },
   go(i, first) {
-    i = clamp(i, 0, TOUR_STOPS.length - 1); if (i === this.i && !first && !this.fly && this.arrived) return;
+    i = clamp(i, 0, this.stops.length - 1); if (i === this.i && !first && !this.fly && this.arrived) return;
     this.i = i; this.arrived = false; clearTimeout(this.autoT); clearInterval(this.typing); this.typing = null; if (window.speechSynthesis) speechSynthesis.cancel();
-    const s = TOUR_STOPS[i], P = this.pose(s), c = R.cam; camBasis();
+    const s = this.stops[i], P = this.pose(s), c = R.cam; camBasis();
     const cp = Math.cos(P.pitch), fwd = [Math.sin(P.yaw) * cp, Math.sin(P.pitch), -Math.cos(P.yaw) * cp];
     const P1 = V3.sub(P.t, V3.mul(fwd, P.d)), P0 = c.pos.slice(), dist = V3.dist(P0, P1);
     const T0 = V3.add(P0, V3.mul(c.fwd, Math.min(OBS.d || 60, dist * 0.5 + 20)));
-    this.fly = { P0, P1, T0, T1: P.t, P, k: 0, dur: clamp(1.5 + dist / 360, 1.7, 4.2), H: clamp(dist * 0.3, 10, 240), fov0: c.fov, under: !!s.under, prevY: P0[1] };
+    this.fly = { P0, P1, T0, T1: P.t, P, k: 0, dur: clamp(1.5 + dist / 360, 1.7, 4.2), H: clamp(dist * 0.3, 10, 240), fov0: c.fov, under: P.t[1] < -0.5, prevY: P0[1] };
     document.body.classList.add('tour-flying'); $('#tourBubble').classList.remove('show'); $('#tourGuide').className = 'fly';
-    $('#tourStep').textContent = `${i + 1} / ${TOUR_STOPS.length}`;
+    $('#tourStep').textContent = `${i + 1} / ${this.stops.length}`;
     $$('#tourDots button').forEach((b, k) => { b.classList.toggle('on', k === i); b.classList.toggle('done', k < i); });
-    $('#tourPrev').disabled = i === 0; $('#tourNext').disabled = false; $('#tourNext').classList.toggle('last', i === TOUR_STOPS.length - 1);
+    $('#tourPrev').disabled = i === 0; $('#tourNext').disabled = false; $('#tourNext').classList.toggle('last', i === this.stops.length - 1);
     this.drawMap(); AUDIO.whoosh();
   },
   update(dt) {
@@ -76,7 +107,7 @@ const TOUR = {
     if (k >= 1) this.arrive();
   },
   arrive() {
-    const F = this.fly, s = TOUR_STOPS[this.i]; this.fly = null; R.speedFx = 0; this.arrived = true;
+    const F = this.fly, s = this.stops[this.i]; this.fly = null; R.speedFx = 0; this.arrived = true;
     Object.assign(OBS, { t: F.P.t, d: F.P.d, yaw: F.P.yaw, pitch: F.P.pitch, anim: null, vy: 0, vp: 0 });
     document.body.classList.remove('tour-flying'); $('#tourGuide').className = 'land' + (s.mood ? ' ' + s.mood : '');
     $('#tourPlace').textContent = '📍 ' + s.place; $('#tourTitle').textContent = s.title; $('#tourEnd').classList.toggle('show', !!s.end);
@@ -95,7 +126,7 @@ const TOUR = {
     if (this.auto && !this.voice) this.scheduleNext();
   },
   scheduleNext(ms) {
-    clearTimeout(this.autoT); if (!this.auto || this.i >= TOUR_STOPS.length - 1) return;
+    clearTimeout(this.autoT); if (!this.auto || this.i >= this.stops.length - 1) return;
     this.autoT = setTimeout(() => { if (MODE.cur === 'tour' && this.auto && !this.fly) this.go(this.i + 1); }, ms || 4200);
   },
   speak() {
@@ -121,13 +152,40 @@ const TOUR = {
   drawMap() {
     const cv = $('#tourMap'); if (!cv || !this.mapBase) return; const c = cv.getContext('2d'), W = cv.width, H = cv.height, m = this.map;
     c.putImageData(this.mapBase, 0, 0);
-    const P = s => [(s.t[0] - m.x0) / (m.x1 - m.x0) * W, (s.t[2] - m.z0) / (m.z1 - m.z0) * H];
+    const P = s => { let t = s.t; if (!t) { const e = SCN.elems.find(x => x.kind === s.kind) || { x: 0, z: 0 }; t = [e.x, 0, e.z]; } return [(t[0] - m.x0) / (m.x1 - m.x0) * W, (t[2] - m.z0) / (m.z1 - m.z0) * H]; };
     c.lineWidth = 3; c.setLineDash([7, 7]); c.strokeStyle = 'rgba(255,255,255,.7)'; c.beginPath();
-    TOUR_STOPS.forEach((s, i) => { const p = P(s); i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1]); }); c.stroke(); c.setLineDash([]);
-    TOUR_STOPS.forEach((s, i) => {
+    this.stops.forEach((s, i) => { const p = P(s); i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1]); }); c.stroke(); c.setLineDash([]);
+    this.stops.forEach((s, i) => {
       const p = P(s), cur = i === this.i; c.beginPath(); c.arc(p[0], p[1], cur ? 13 : 9, 0, TAU);
       c.fillStyle = cur ? '#F4CD55' : i < this.i ? '#3A5BB8' : 'rgba(10,30,40,.85)'; c.fill(); c.lineWidth = 2.5; c.strokeStyle = '#fff'; c.stroke();
       c.fillStyle = cur ? '#1b2340' : '#fff'; c.font = `bold ${cur ? 14 : 11}px sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(i + 1, p[0], p[1] + 0.5);
     });
   }
 };
+
+/* ---------- 생물·자원 코스: every living resource and the undersea resources ---------- */
+const josa = w => { const c = w.charCodeAt(w.length - 1); return c >= 0xAC00 && c <= 0xD7A3 && (c - 0xAC00) % 28 ? '이에요' : '예요'; };
+const LIFE_ORDER = [
+  ['gull', '독도 하늘', '하늘을 올려다보세요! '], ['gullsit', '동도 절벽', '절벽 위에도 괭이갈매기가 잔뜩 앉아 있어요. '], ['petrel', '서도 하늘', '제비처럼 날쌘 새가 보이나요? '], ['egret', '선착장', '선착장 근처에 하얀 새가 쉬고 있어요. '],
+  ['aster', '바닷가 절벽', '바위틈의 보랏빛 꽃을 보세요. '], ['sedum', '햇볕 드는 바위틈', '노란 별 모양 꽃이 피었어요. '], ['euonymus', '동도 절벽', '절벽에 푸른 나무 한 그루가 보이죠? '],
+  ['damsel', '바닷속', '이제 바닷속 친구들을 만나 봐요! '], ['bluedam', '동도 남쪽 바다', '파랗게 빛나는 물고기 떼예요. '], ['hump', '바위 굴 근처', '이마가 볼록한 큰 물고기가 지나가요. '], ['stone', '바위 많은 바다', '줄무늬 옷을 입은 물고기예요. '],
+  ['squid', '독도 바다', '다리가 많은 친구가 헤엄쳐요. '], ['jelly', '바닷물 위쪽', '둥실둥실 떠다니는 친구도 있어요. '], ['shrimp', '깊은 바다 밑', '빨간 새우들이 모여 있어요. '],
+  ['urchin', '바다 밑 바위', '가시투성이 친구예요. '], ['star', '바다 밑 바위', '별 모양 친구를 찾았어요! '], ['abalone', '얕은 바다 바위', '바위에 딱 붙은 조개가 있어요. '], ['conch', '얕은 바다 바위', '돌돌 말린 껍데기가 보여요. '],
+  ['cucumber', '바다 밑바닥', '바닥을 기어가는 친구예요. '], ['mussel', '물가 바위', '파도 치는 바위에 까만 조개들이 붙어 있어요. '], ['kelp', '바다숲', '바닷속에 숲이 있어요! '], ['tunicate', '암초', '투명한 친구가 보이나요? '],
+  ['sealion', '가제바위', '짠! 바로 저, 강치의 옛 모습이에요. '], ['hydrate', '깊은 바다 밑 (모형)', '이번엔 생물이 아니라 바다 밑에 묻힌 지하자원이에요. ']
+];
+function lifeStops() {
+  const out = [{ place: '독도 바다', title: '생물·자원 코스', t: [60, 20, 150], d: 320, yaw: yawFrom(0.2, 1), pitch: -0.3,
+    text: '이번에는 독도에 사는 생물과 바다의 자원을 하나하나 소개할게요. 새, 식물, 물고기, 바다 생물, 그리고 바다 밑 지하자원까지! ▶ 버튼을 눌러 출발해요.' }];
+  for (const [kind, place, lead] of LIFE_ORDER) {
+    const k = KINDS[kind]; if (!k || !SCN.elems.some(e => e.kind === kind && !e.hidden)) continue;
+    const nm = k.name.replace(/ \(.*\)/, '');
+    const body = kind === 'sealion' ? `${k.desc} ${k.fact} 우리 바다 생물을 아끼는 마음을 잊지 말아 주세요.` : `이 친구는 ${nm}${josa(nm)}. ${k.desc} ${k.fact}`;
+    out.push({ kind, pick: 'near', place, title: k.name, see: kind, text: lead + (kind === 'hydrate' ? `${k.desc} ${k.fact}` : body) });
+  }
+  out.push({ place: '동해 깊은 바다', title: '해양심층수', t: [-60, -14, -330], d: 18, yaw: yawFrom(0.3, 1), pitch: -0.35,
+    text: '햇빛이 닿지 않는 수심 200m보다 깊은 곳의 바닷물을 해양심층수라고 해요. 차갑고 깨끗하며 미네랄이 풍부해서 먹는 물, 식품, 화장품 등에 쓰여요. 독도가 있는 동해 깊은 곳에도 해양심층수가 많아요.' });
+  out.push({ place: '독도 바다', title: '독도는 바다의 보물 창고', t: [40, 45, 10], d: 430, yaw: yawFrom(0.3, 0.95), pitch: -0.2, end: true,
+    text: '오징어, 독도새우, 전복, 홍합 같은 수산자원과 메탄 하이드레이트, 해양심층수 같은 자원까지! 독도 바다는 정말 소중한 보물 창고예요. 오늘 만난 친구들은 모두 도감에 등록되었어요.' });
+  return out;
+}

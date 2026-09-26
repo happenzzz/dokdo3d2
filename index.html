@@ -7,7 +7,7 @@
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Gowun+Dodum&display=swap" rel="stylesheet">
-<link rel="preload" href="assets/guide/guide_full.webp" as="image">
+<link rel="preload" href="assets/loader/frame1.webp" as="image"><link rel="preload" href="assets/loader/frame2.webp" as="image">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body class="m-observer">
@@ -24,14 +24,18 @@
     <button class="tab t-obs on" data-m="observer"><i>👁️</i><span>관찰자</span></button>
     <button class="tab t-tour" data-m="tour"><img class="tface" src="assets/guide/guide_face.webp" alt=""><span>관광</span></button>
     <button class="tab t-exp" data-m="explorer"><i>🧭</i><span>탐험가</span></button>
+    <button class="tab t-game" data-m="game"><i>🏁</i><span>게임</span></button>
     <button class="tab t-dev" data-m="dev"><i>🛠️</i><span>개발자</span></button>
     <button class="tab t-quiz" data-m="quiz"><i>❓</i><span>퀴즈</span></button>
   </nav>
+  <button id="bMore" class="ic" title="더보기" aria-label="더보기">⋯</button>
   <div class="tools">
     <button id="bDex" class="ic" title="도감">📖<b id="dexCount">0</b></button>
     <button id="bSound" class="ic" title="소리">🔊</button>
     <button id="bSet" class="ic" title="설정">⚙️</button>
     <button id="bHelp" class="ic" title="사용 방법">❔</button>
+    <button id="bNight" class="ic" title="밤/낮 바꾸기">🌙</button>
+    <button id="bFull" class="ic" title="전체화면">⛶</button>
   </div>
 </header>
 
@@ -63,6 +67,7 @@
   <div class="hint">왼쪽 아래: 이동 · 오른쪽 드래그: 둘러보기 · 톡: 자세히 보기 · 키보드 W A S D</div>
 </div>
 <section id="tour" aria-label="관광 모드">
+  <div id="tourCourse"><button data-c="place" class="on">🏝️ 명소 코스</button><button data-c="life">🐟 생물·자원 코스</button></div>
   <canvas id="tourMap" width="300" height="230" aria-hidden="true"></canvas>
   <div id="tourGuide"><img src="assets/guide/guide_full.webp" alt="강치 관광 가이드" draggable="false"></div>
   <div id="tourBubble">
@@ -78,6 +83,17 @@
   </div>
 </section>
 <div id="speedFx"></div>
+<section id="game" aria-label="수영 경주 게임">
+  <div id="gHud">
+    <div class="gbox"><small>기록</small><b id="gTime">0:00.00</b></div>
+    <div class="gbar"><div class="gtrack"><i id="gRival">🦭</i><i id="gMe">🏊</i><span class="gflag">🏁</span></div><small id="gPos">출발 전</small></div>
+    <div class="gbox"><small>보너스</small><b id="gScore">0</b></div>
+  </div>
+  <div id="gMsg"></div>
+  <div class="gpad left"><button id="gLeft" class="gbtn" aria-label="왼쪽">◀</button><button id="gRight" class="gbtn" aria-label="오른쪽">▶</button></div>
+  <div class="gpad right"><button id="gJump" class="gbtn jump">⤴<span>점프</span></button><button id="gDive" class="gbtn dive">⤵<span>잠수</span></button></div>
+  <div id="gPanel" class="gpanel"></div>
+</section>
 <div id="joy"><div class="knob"></div></div>
 
 <div id="infoCard"></div>
@@ -96,30 +112,15 @@
 <div id="toast"></div>
 <div id="fps"></div>
 
-<div id="loading">
-  <svg viewBox="0 0 360 150" aria-hidden="true">
-    <path d="M40 118 L70 78 L92 60 L110 38 L124 30 L140 44 L150 70 L166 84 L178 118 Z" fill="#2c4a4f"/>
-    <path d="M196 118 L212 90 L228 72 L246 66 L262 58 L276 70 L290 92 L306 118 Z" fill="#35585d"/>
-    <path d="M124 30 L130 48 L118 60 L110 38 Z" fill="#46686c"/>
-    <path class="wave1" d="M0 118 Q30 110 60 118 T120 118 T180 118 T240 118 T300 118 T360 118 V150 H0 Z" fill="#1d7f92" opacity=".85"/>
-    <path class="wave2" d="M0 126 Q30 118 60 126 T120 126 T180 126 T240 126 T300 126 T360 126 V150 H0 Z" fill="#35B3C4" opacity=".7"/>
-  </svg>
-  <h1>3D <b>독도</b> 탐험</h1>
-  <div class="bar"><i id="loadBar"></i></div>
-  <p id="loadMsg">불러오는 중…</p>
-</div>
-
-<div id="intro">
-  <div class="introbox">
-    <h1>반가워요! <b>독도</b>로 떠나 볼까요?</h1>
-    <p>동해 한가운데 우리 땅 독도의 바위와 바다, 그리고 그곳에 사는 생물을 3D로 만나요.<br>마음에 드는 방법을 골라 출발하세요.</p>
-    <div class="introbtns">
-      <button id="introGo"><span>👁️</span>관찰하기<small>섬 전체를 돌려 보기</small></button>
-      <button id="introTour"><img src="assets/guide/guide_face.webp" alt="">관광하기<small>강치 가이드와 한 바퀴</small></button>
-      <button id="introExp"><span>🧭</span>탐험하기<small>걷고, 뛰어들고, 잠수하기</small></button>
-      <button id="introQuiz"><span>❓</span>퀴즈 풀기<small>독도 박사 도전!</small></button>
-    </div>
+<div id="loading" class="s1" role="status" aria-live="polite">
+  <div class="ld-stage">
+    <div class="ld-fr fr1"><img src="assets/loader/frame1.webp" alt="강치가 선착장에서 손을 흔들어요" draggable="false"></div>
+    <div class="ld-fr fr2"><img src="assets/loader/frame2.webp" alt="강치가 배를 타고 독도로 가요" draggable="false"></div>
+    <div class="ld-fr fr3"><img src="assets/loader/frame3.webp" alt="강치가 독도에 도착했어요" draggable="false"></div>
   </div>
+  <div class="ld-bar"><span class="ld-spark l"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M8 8l10 8M5 20h14M8 32l10-8"/></svg></span><div class="ld-cells" id="loadCells"></div><span class="ld-spark r"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M8 8l10 8M5 20h14M8 32l10-8"/></svg></span></div>
+  <img class="ld-school" src="assets/loader/school.webp" alt="부산교육대학교 부설초등학교" draggable="false">
+  <p id="loadMsg">독도로 출발해요…</p>
 </div>
 
 <script src="js/00_data.js"></script>
@@ -134,4 +135,5 @@
 <script src="js/09_quiz.js"></script>
 <script src="js/10_ui_audio.js"></script>
 <script src="js/11_tour.js"></script>
+<script src="js/12_game.js"></script>
 </body></html>

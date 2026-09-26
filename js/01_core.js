@@ -150,20 +150,23 @@ function buildTextures(quality) {
   }
   const texNoise = GLX.tex(N, N, px);
 
-  // rock detail: normal + height + natural cracks (ridged noise, no cell pattern)
-  const f1 = fbmTile(N, 8, 5, rnd, 0.55), f2 = fbmTile(N, 16, 4, rnd, 0.5), f3 = fbmTile(N, 6, 4, rnd, 0.6), hh = new Float32Array(N * N), crack = new Float32Array(N * N);
-  for (let i = 0; i < N * N; i++) {
+  // rock detail: normal + height + cracks. Higher resolution + extra grit octave on capable devices (built once, no per-frame cost)
+  const RN = quality === 'low' ? 256 : 512;
+  const f1 = fbmTile(RN, 8, 5, rnd, 0.55), f2 = fbmTile(RN, 16, 4, rnd, 0.5), f3 = fbmTile(RN, 6, 4, rnd, 0.6), hh = new Float32Array(RN * RN), crack = new Float32Array(RN * RN);
+  const gr = fbmTile(RN, 64, 2, rnd, 0.5), pits = worleyTile(RN, 36, rnd), gr2 = RN > 256 ? fbmTile(RN, 160, 2, rnd, 0.5) : null;
+  for (let i = 0; i < RN * RN; i++) {
     const rid = 1 - Math.abs(f2[i] * 2 - 1), rid2 = 1 - Math.abs(f3[i] * 2 - 1);
     crack[i] = smooth(0.955, 0.995, rid2) * smooth(0.35, 0.6, f1[i]);
-    hh[i] = f1[i] * 0.6 + rid * rid * 0.4 - crack[i] * 0.18;
+    const pit = smooth(0.3, 0.05, pits.F1[i]) * smooth(0.35, 0.65, f1[i]);
+    hh[i] = f1[i] * 0.5 + rid * rid * 0.3 + (gr[i] - 0.5) * 0.34 + (gr2 ? (gr2[i] - 0.5) * 0.16 : 0) - pit * 0.18 - crack[i] * 0.22;
   }
-  const rp = new Uint8Array(N * N * 4);
-  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
-    const i = y * N + x, l = hh[y * N + ((x + N - 1) % N)], rr = hh[y * N + ((x + 1) % N)], u = hh[((y + N - 1) % N) * N + x], d = hh[((y + 1) % N) * N + x];
-    const s = 7, nx = (l - rr) * s, ny = (u - d) * s, il = 1 / Math.hypot(nx, ny, 1);
+  const rp = new Uint8Array(RN * RN * 4), ns = 10.5 * RN / 256 * 1.1;
+  for (let y = 0; y < RN; y++) for (let x = 0; x < RN; x++) {
+    const i = y * RN + x, l = hh[y * RN + ((x + RN - 1) % RN)], rr = hh[y * RN + ((x + 1) % RN)], u = hh[((y + RN - 1) % RN) * RN + x], d = hh[((y + 1) % RN) * RN + x];
+    const nx = (l - rr) * ns, ny = (u - d) * ns, il = 1 / Math.hypot(nx, ny, 1);
     rp[i * 4] = (nx * il * .5 + .5) * 255; rp[i * 4 + 1] = (ny * il * .5 + .5) * 255; rp[i * 4 + 2] = clamp(hh[i], 0, 1) * 255; rp[i * 4 + 3] = crack[i] * 255;
   }
-  const texRock = GLX.tex(N, N, rp);
+  const texRock = GLX.tex(RN, RN, rp);
 
   // water ripples normal + foam pattern
   const wh = fbmTile(N, 8, 5, rnd, 0.52), fw = worleyTile(N, 16, rnd), fw2 = fbmTile(N, 16, 3, rnd);
@@ -191,7 +194,7 @@ const SUN = V3.norm([-0.52, 0.5, 0.62]);
 const SUNCOL = [2.45, 2.25, 1.95];
 function buildSky(quality) {
   const W = quality === 'low' ? 256 : 512, Hh = W / 2, px = new Uint8Array(W * Hh * 4), N = NOISE.N;
-  const zen = srgb('#3f78c4'), hor = srgb('#b9d3e2'), low = srgb('#9fb9c6');
+  const zen = srgb('#2a68cc'), hor = srgb('#b3d1ea'), low = srgb('#8fb0c6');
   for (let y = 0; y < Hh; y++) {
     const th = (0.5 - (y + .5) / Hh) * Math.PI, st = Math.sin(th), ct = Math.cos(th);
     for (let x = 0; x < W; x++) {
@@ -240,3 +243,45 @@ function vnoise3(x, y, z) {
   const y1 = x1 + (x2 - x1) * fy, y2 = x3 + (x4 - x3) * fy; return y1 + (y2 - y1) * fz;
 }
 function fbm3(x, y, z) { return vnoise3(x, y, z) * 0.58 + vnoise3(x * 2.07, y * 2.07, z * 2.07) * 0.28 + vnoise3(x * 4.3, y * 4.3, z * 4.3) * 0.14; }
+
+/* night sky: deep blue gradient, milky way, stars; the moon sits where the sun was (baked shadows stay valid) */
+function buildNightSky(quality) {
+  const W = quality === 'low' ? 1024 : 2048, Hh = W / 2, px = new Uint8Array(W * Hh * 4), N = NOISE.N, rnd = makeRand(4242);
+  const zen = [0.0035, 0.0075, 0.026], hor = [0.028, 0.050, 0.105], low = [0.012, 0.022, 0.045];
+  const mw = V3.norm([0.35, 0.55, -0.76]);
+  for (let y = 0; y < Hh; y++) {
+    const th = (0.5 - (y + .5) / Hh) * Math.PI, st = Math.sin(th), ct = Math.cos(th);
+    for (let x = 0; x < W; x++) {
+      const ph = ((x + .5) / W - .5) * TAU, d = [Math.sin(ph) * ct, st, -Math.cos(ph) * ct];
+      let col = st >= 0 ? V3.lerp(hor, zen, Math.pow(st, 0.5)) : V3.lerp(hor, low, smooth(0, -0.25, st));
+      const dp = Math.max(0, V3.dot(d, SUN));
+      col = V3.add(col, V3.mul([0.55, 0.62, 0.8], Math.pow(dp, 180) * 0.35 + Math.pow(dp, 14) * 0.05));
+      if (st > 0) {
+        const band = Math.exp(-Math.pow(V3.dot(d, mw) / 0.2, 2));
+        const n = sampleTile(NOISE.r, N, ph * 18, th * 18) * 0.6 + sampleTile(NOISE.g, N, ph * 40, th * 40) * 0.4;
+        col = V3.add(col, V3.mul([0.05, 0.055, 0.07], band * smooth(0.35, 0.8, n) * smooth(0, 0.3, st)));
+      }
+      const i = (y * W + x) * 4;
+      for (let k = 0; k < 3; k++) px[i + k] = clamp(Math.pow(Math.min(col[k], 1), 1 / 2.2) * 255, 0, 255);
+      px[i + 3] = 255;
+    }
+  }
+  const NS = quality === 'low' ? 2600 : 5200;
+  for (let s = 0; s < NS; s++) {
+    const u = rnd(), v = rnd(), st = Math.pow(v, 0.7), th = Math.asin(st), ph = u * TAU;
+    const x = Math.floor(u * W), y = Math.floor((0.5 - th / Math.PI) * Hh); if (y < 0 || y >= Hh) continue;
+    const d = [Math.sin(ph - Math.PI) * Math.cos(th), st, -Math.cos(ph - Math.PI) * Math.cos(th)];
+    if (V3.dot(d, SUN) > 0.985) continue;
+    const b = Math.pow(rnd(), 7) * 0.95 + 0.12, tint = rnd(), fade = smooth(0.02, 0.2, st);
+    const c = [b * (0.85 + tint * 0.2), b * 0.92, b * (1.05 - tint * 0.2)];
+    const i = (y * W + x) * 4;
+    for (let k = 0; k < 3; k++) px[i + k] = Math.max(px[i + k], clamp(Math.pow(c[k] * fade, 1 / 2.2) * 255, 0, 255));
+    if (b > 0.6 && x + 1 < W) { const j = i + 4; for (let k = 0; k < 3; k++) px[j + k] = Math.max(px[j + k], px[i + k] * 0.5); }
+  }
+  const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t); gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.SRGB8_ALPHA8, W, Hh, 0, gl.RGBA, gl.UNSIGNED_BYTE, px);
+  gl.generateMipmap(gl.TEXTURE_2D);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  return t;
+}

@@ -379,18 +379,21 @@ const MODE = {
     if (m === this.cur && m !== 'observer') return;
     if (FOCUS.active) FOCUS.restore(true);
     const prev = this.cur; this.cur = m; SCN.sel = null; R.brush[3] = 0;
-    document.body.classList.remove('m-observer', 'm-explorer', 'm-dev', 'm-quiz', 'm-tour'); document.body.classList.add('m-' + m);
+    document.body.classList.remove('m-observer', 'm-explorer', 'm-dev', 'm-quiz', 'm-tour', 'm-game'); document.body.classList.add('m-' + m);
     if (m === 'explorer' && prev !== 'explorer') { if (!EXP.placed) { expTeleport([199, TER.heightAt(199, 186), 186], Math.PI); EXP.placed = true; } UI.toast('탐험가 모드: 움직여 보고, 궁금한 것을 눌러 보세요!'); }
     if (prev === 'tour' && m !== 'tour') TOUR.close();
+    if (prev === 'game' && m !== 'game') GAME.close();
+    if (m === 'game') GAME.open();
     AUDIO.engine(m === 'explorer' && EXP.state === 'boat'); R.speedFx = 0;
     if (m === 'tour') TOUR.open();
-    if (m === 'observer' || m === 'dev' || m === 'quiz') { if (prev === 'explorer') { const c = R.cam; OBS.t = V3.add(c.pos, V3.mul(c.fwd, 40)); OBS.d = 40; OBS.yaw = c.yaw; OBS.pitch = Math.min(c.pitch, -0.2); obsFly(PRESETS.dong, 2); } }
+    if (m === 'observer' || m === 'dev' || m === 'quiz') { if (prev === 'explorer' || prev === 'game') { const c = R.cam; OBS.t = V3.add(c.pos, V3.mul(c.fwd, 40)); OBS.d = 40; OBS.yaw = c.yaw; OBS.pitch = Math.min(c.pitch, -0.2); obsFly(PRESETS.dong, 2); } }
     if (m === 'quiz') QUIZ.open();
     UI.modeChanged(m);
   },
   update(dt) {
     if (FOCUS.active) { if (this.cur === 'explorer') { /* keep player still */ } return; }
-    if (this.cur === 'explorer') expUpdate(dt); else if (this.cur === 'tour' && TOUR.fly) TOUR.update(dt); else obsUpdate(dt);
+    if (this.cur === 'game') { GAME.update(dt); return; }
+    if (this.cur === 'explorer') expUpdate(dt); else if (this.cur === 'tour' && TOUR.fly) TOUR.update(dt); else { obsUpdate(dt); if (this.cur === 'tour') TOUR.follow(dt); }
     if (this.cur === 'dev' && DEV.sculpting && DEV.lastP) devSculpt(DEV.lastP, dt);
   }
 };
@@ -465,7 +468,7 @@ function multiTouch() {
   INPUT.pinch = { mx, my, span, ang };
 }
 function onTap(x, y) {
-  if (FOCUS.active || MODE.cur === 'tour') return;
+  if (FOCUS.active || MODE.cur === 'tour' || MODE.cur === 'game') return;
   const d = screenRay(x, y), o = R.cam.pos;
   if (MODE.cur === 'dev') {
     if (DEV.place) { const hit = worldHit(x, y, true); if (hit) devPlace(DEV.place, hit); return; }
@@ -480,7 +483,7 @@ function onTap(x, y) {
   if (th) { const a = areaAt(th.p); openInfo({ p: th.p, r: a === 'cheonjang' ? 22 : 18 }, AREA_INFO[a], a); }
 }
 function onDoubleTap(x, y) {
-  if (MODE.cur === 'explorer' || MODE.cur === 'tour' || FOCUS.active) return;
+  if (MODE.cur === 'explorer' || MODE.cur === 'tour' || MODE.cur === 'game' || FOCUS.active) return;
   const hit = worldHit(x, y, true); if (!hit) return;
   obsFly({ t: hit, d: Math.max(30, OBS.d * 0.45), yaw: OBS.yaw, pitch: OBS.pitch }, 1.1);
 }
