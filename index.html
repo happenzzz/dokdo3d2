@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="theme-color" content="#061418">
+<meta name="description" content="3D로 만나는 우리 땅 독도 — 관찰·관광·탐험·개발자·퀴즈 모드">
+<title>3D 독도 탐험</title>
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Gowun+Dodum&display=swap" rel="stylesheet">
+<link rel="preload" href="assets/guide/guide_full.webp" as="image">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body class="m-observer">
+<canvas id="gl" tabindex="0"></canvas>
+<div id="labels"></div>
+<div id="uw"></div>
+<div id="fxSplash"></div><div id="fxDrops"></div><div id="fxStamp"></div>
+<div id="lbTop" class="lb"></div>
+<canvas id="confetti"></canvas>
+
+<header id="top">
+  <div class="brand"><i>🏝️</i><span>3D 독도 탐험</span></div>
+  <nav id="tabs">
+    <button class="tab t-obs on" data-m="observer"><i>👁️</i><span>관찰자</span></button>
+    <button class="tab t-tour" data-m="tour"><img class="tface" src="assets/guide/guide_face.webp" alt=""><span>관광</span></button>
+    <button class="tab t-exp" data-m="explorer"><i>🧭</i><span>탐험가</span></button>
+    <button class="tab t-dev" data-m="dev"><i>🛠️</i><span>개발자</span></button>
+    <button class="tab t-quiz" data-m="quiz"><i>❓</i><span>퀴즈</span></button>
+  </nav>
+  <div class="tools">
+    <button id="bDex" class="ic" title="도감">📖<b id="dexCount">0</b></button>
+    <button id="bSound" class="ic" title="소리">🔊</button>
+    <button id="bSet" class="ic" title="설정">⚙️</button>
+    <button id="bHelp" class="ic" title="사용 방법">❔</button>
+  </div>
+</header>
+
+<div id="obsHud" class="hud">
+  <div class="presets">
+    <button data-p="all">🗺️ 전경</button><button data-p="dong">⛰️ 동도</button><button data-p="seo">🏔️ 서도</button><button data-p="top">🛰️ 위에서</button><button data-p="under">🐠 바닷속</button>
+  </div>
+  <div class="obsTools"><button id="bLabels" class="chip on">🏷️ 이름표</button><button id="bRotate" class="chip">🔄 자동 회전</button></div>
+  <div class="hint">드래그: 돌리기 · 두 손가락: 확대·이동 · 톡: 정보 · 톡톡: 날아가기</div>
+</div>
+
+<div id="expHud" class="hud">
+  <div id="expState">🚶 걷는 중</div>
+  <div class="joyzone">여기를 누르고<br>움직여요</div>
+  <div class="actions">
+    <button id="bUp" class="act">⬆️<span>위로</span></button>
+    <button id="bDown" class="act">⬇️<span>아래로</span></button>
+    <button id="bSurf" class="act">🫧<span>떠오르기</span></button>
+    <button id="bJump" class="act">🦘<span>점프</span></button>
+    <button id="bClimb" class="act">🧗<span>등반하기</span></button>
+    <button id="bSwim" class="act">🏊<span>수영하기</span></button>
+    <button id="bBoat" class="act">🚤<span>배 타기</span></button>
+    <button id="bLeave" class="act">🛟<span>내리기</span></button>
+    <button id="bHorn" class="act">📯<span>뱃고동</span></button>
+    <button id="bRun" class="act">🏃<span>달리기</span></button>
+    <button id="bQuay" class="act">⚓<span>선착장</span></button>
+    <button id="bDive" class="act big-act">🤿<span>잠수</span></button>
+  </div>
+  <div class="hint">왼쪽 아래: 이동 · 오른쪽 드래그: 둘러보기 · 톡: 자세히 보기 · 키보드 W A S D</div>
+</div>
+<section id="tour" aria-label="관광 모드">
+  <canvas id="tourMap" width="300" height="230" aria-hidden="true"></canvas>
+  <div id="tourGuide"><img src="assets/guide/guide_full.webp" alt="강치 관광 가이드" draggable="false"></div>
+  <div id="tourBubble">
+    <div class="tb-top"><span id="tourPlace" class="tplace">📍 독도</span><span id="tourStep" class="tstep">1 / 13</span></div>
+    <h2 id="tourTitle">독도 관광</h2>
+    <p id="tourText"></p>
+    <div id="tourEnd" class="tend"><button id="tourToExp">🧭 탐험하러 가기</button><button id="tourToQuiz">❓ 퀴즈 풀기</button><button id="tourAgain">↺ 처음부터</button></div>
+    <div class="tb-bottom"><button id="tourVoice" class="tchip">🔈 소리로 듣기</button><button id="tourAuto" class="tchip">⏵ 자동 관광</button><div id="tourDots" class="tdots"></div></div>
+  </div>
+  <div class="tnav">
+    <button id="tourPrev" class="tarrow" aria-label="이전 장소"><svg viewBox="0 0 24 24"><path d="M15 4 7 12l8 8"/></svg><span>이전</span></button>
+    <button id="tourNext" class="tarrow next" aria-label="다음 장소"><svg viewBox="0 0 24 24"><path d="M9 4l8 8-8 8"/></svg><span>다음 장소</span></button>
+  </div>
+</section>
+<div id="speedFx"></div>
+<div id="joy"><div class="knob"></div></div>
+
+<div id="infoCard"></div>
+<section id="detail"></section>
+
+<aside id="devPanel">
+  <div class="dtop"><h3>🛠️ 개발자 도구</h3><button id="devToggle" title="패널 접기">↔️</button></div>
+  <div class="dtabs"><button data-t="elems" class="on">요소</button><button data-t="add">추가</button><button data-t="terrain">지형</button><button data-t="sea">바다</button><button data-t="save">저장</button></div>
+  <div class="dbody" id="devBody"></div>
+</aside>
+<div id="selBar"></div>
+
+<section id="quiz"><div id="quizBox" class="qbox"></div></section>
+
+<div id="modal" class="modal"><div class="mbox" id="mbox"></div></div>
+<div id="toast"></div>
+<div id="fps"></div>
+
+<div id="loading">
+  <svg viewBox="0 0 360 150" aria-hidden="true">
+    <path d="M40 118 L70 78 L92 60 L110 38 L124 30 L140 44 L150 70 L166 84 L178 118 Z" fill="#2c4a4f"/>
+    <path d="M196 118 L212 90 L228 72 L246 66 L262 58 L276 70 L290 92 L306 118 Z" fill="#35585d"/>
+    <path d="M124 30 L130 48 L118 60 L110 38 Z" fill="#46686c"/>
+    <path class="wave1" d="M0 118 Q30 110 60 118 T120 118 T180 118 T240 118 T300 118 T360 118 V150 H0 Z" fill="#1d7f92" opacity=".85"/>
+    <path class="wave2" d="M0 126 Q30 118 60 126 T120 126 T180 126 T240 126 T300 126 T360 126 V150 H0 Z" fill="#35B3C4" opacity=".7"/>
+  </svg>
+  <h1>3D <b>독도</b> 탐험</h1>
+  <div class="bar"><i id="loadBar"></i></div>
+  <p id="loadMsg">불러오는 중…</p>
+</div>
+
+<div id="intro">
+  <div class="introbox">
+    <h1>반가워요! <b>독도</b>로 떠나 볼까요?</h1>
+    <p>동해 한가운데 우리 땅 독도의 바위와 바다, 그리고 그곳에 사는 생물을 3D로 만나요.<br>마음에 드는 방법을 골라 출발하세요.</p>
+    <div class="introbtns">
+      <button id="introGo"><span>👁️</span>관찰하기<small>섬 전체를 돌려 보기</small></button>
+      <button id="introTour"><img src="assets/guide/guide_face.webp" alt="">관광하기<small>강치 가이드와 한 바퀴</small></button>
+      <button id="introExp"><span>🧭</span>탐험하기<small>걷고, 뛰어들고, 잠수하기</small></button>
+      <button id="introQuiz"><span>❓</span>퀴즈 풀기<small>독도 박사 도전!</small></button>
+    </div>
+  </div>
+</div>
+
+<script src="js/00_data.js"></script>
+<script src="js/01_core.js"></script>
+<script src="js/02_shaders.js"></script>
+<script src="js/03_terrain.js"></script>
+<script src="js/04_rocks.js"></script>
+<script src="js/05_models.js"></script>
+<script src="js/06_scene.js"></script>
+<script src="js/07_render.js"></script>
+<script src="js/08_modes.js"></script>
+<script src="js/09_quiz.js"></script>
+<script src="js/10_ui_audio.js"></script>
+<script src="js/11_tour.js"></script>
+</body></html>
