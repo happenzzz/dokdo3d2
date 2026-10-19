@@ -44,15 +44,19 @@ const KINDS = {
   sedum: K({ name: '섬기린초', group: 'plant', icon: '🌼', mesh: () => flowerMesh(col('#f4c81c'), col('#e09a10'), col('#3f7a2a'), 9, 5, 0.035), anim: 3, animP: [1.8, 0.04, 0, 0], two: 1, beh: 'patch', n: 6, spread: 5, s: 1.6, r: 0.3, where: '햇볕 드는 바위틈', place: 'ground', desc: '두툼한 잎에 물을 저장하는 식물이에요. 여름에 노란 별 모양 꽃이 피어요.', fact: '울릉도와 독도에서 자라는 식물로, 물이 부족한 바위틈에서도 잘 견뎌요.' }),
   euonymus: K({ name: '독도 사철나무', group: 'plant', icon: '🌳', mesh: shrubMesh, anim: 3, animP: [1.1, 0.06, 0, 0], beh: 'patch', n: 2, spread: 3, s: 1.3, r: 1.2, where: '동도 절벽', place: 'ground', desc: '사계절 내내 잎이 푸른 나무예요. 흙이 거의 없는 절벽에서 100년 넘게 살아왔어요.', fact: '독도에서 가장 오래된 나무로 알려져 있고, 천연기념물 제538호로 지정되었어요.' }),
 
-  quay: K({ name: '독도 선착장', group: 'fac', icon: '⚓', mesh: FAC.quay, beh: 'static', r: 17, label: true, where: '동도 남쪽', place: 'sea', desc: '배가 닿는 곳이에요. 독도를 찾은 사람들이 여기서 내려 독도 땅을 밟아요.', fact: '파도가 높으면 배가 닿을 수 없어서 독도 땅을 밟기가 쉽지 않아요.' }),
-  guard: K({ name: '독도경비대', group: 'fac', icon: '👮', mesh: FAC.guard, beh: 'static', r: 11, label: true, where: '동도 위쪽', place: 'ground', desc: '독도를 지키는 경찰 경비대원들이 생활하며 근무하는 곳이에요.', fact: '경비대원들은 24시간 교대로 독도의 바다와 하늘을 지켜요.' }),
+  quay: K({ name: '독도 선착장', group: 'fac', icon: '⚓', mesh: FAC.quay, beh: 'static', r: 17, label: true, where: '동도 서쪽 바닷가 (서도와 마주 보는 곳)', place: 'sea', desc: '배가 닿는 곳(접안시설)이에요. 독도를 찾은 사람들이 여기서 내려 독도 땅을 밟아요. 선착장에 서면 바다 건너 서도의 주민숙소가 마주 보여요.', fact: '1997년에 완공되었고 길이는 약 80m예요. 500톤급 배까지 댈 수 있지만, 파도가 높으면 배가 닿을 수 없어서 독도 땅을 밟기가 쉽지 않아요.' }),
+  guard: K({ name: '독도경비대', group: 'fac', icon: '👮', mesh: FAC.guard, beh: 'static', r: 11, label: true, where: '동도 위쪽', place: 'ground', desc: '독도를 지키는 경찰 경비대원들이 생활하며 근무하는 3층 숙소예요. 선착장에서 계단길과 케이블이 이곳까지 이어져 있어요.', fact: '경비대원들은 24시간 교대로 독도의 바다와 하늘을 지켜요.' }),
+  stairs: K({ name: '경비대 가는 계단길', group: 'fac', icon: '🪜', mesh: () => routeMesh('guard'), beh: 'static', r: 6, route: 'guard', label: true, where: '동도 선착장 → 독도경비대 숙소', place: 'ground', desc: '선착장에서 동도 위쪽 독도경비대 숙소까지 이어진 계단길(등반로)이에요. 난간을 잡고 꼬불꼬불 가파른 비탈을 올라가요.', fact: '경비대 등반로는 길이가 약 800m나 돼요. 계단 중간에는 바다를 내려다보는 전망 쉼터도 있어요.' }),
+  cable: K({ name: '물자 운반 케이블(삭도)', group: 'fac', icon: '🚡', mesh: cableMesh, beh: 'static', r: 6, cable: true, label: true, where: '동도 선착장 옆 → 경비대 숙소 앞', place: 'ground', desc: '선착장에서 경비대 숙소 앞까지 굵은 쇠줄(케이블)을 걸어 놓고, 운반차에 짐을 실어 끌어올려요. 쌀, 물, 기름처럼 무거운 물자를 계단으로 나르기는 너무 힘들거든요.', fact: '길이 약 300m의 케이블로 한 번에 1.5톤까지 실어 나를 수 있어요.' }),
+  cablecar: K({ name: '케이블 운반차', group: 'fac', icon: '🚡', mesh: cablecarMesh, beh: 'static', r: 1.6, place: 'air', game: true, desc: '', fact: '' }),
+  seostairs: K({ name: '물골 가는 998계단', group: 'fac', icon: '🪜', mesh: () => routeMesh('seo'), beh: 'static', r: 6, route: 'seo', label: true, where: '서도 주민숙소 뒤 → 물골', place: 'ground', desc: '주민숙소 뒤에서 시작해 서도의 가파른 비탈을 지나 물골까지 이어지는 계단이에요.', fact: '계단이 998개나 되어서 998계단이라고 불러요. 아래에서 올려다보면 회오리처럼 꼬불꼬불해 보여요.' }),
   light: K({ name: '독도 등대', group: 'fac', icon: '🗼', mesh: FAC.light, beh: 'static', r: 8, label: true, where: '동도 꼭대기 부근', place: 'ground', desc: '밤바다를 지나는 배들에게 길을 알려 주는 등대예요.', fact: '1954년에 처음 불을 밝혔어요.' }),
   heli: K({ name: '헬기장', group: 'fac', icon: '🚁', mesh: FAC.heli, beh: 'static', r: 12, label: true, where: '동도 위쪽', place: 'ground', desc: '헬리콥터가 뜨고 내리는 곳이에요.', fact: '배가 닿기 어려운 날에도 헬리콥터로 사람과 물건을 나를 수 있어요.' }),
-  house: K({ name: '주민숙소', group: 'fac', icon: '🏠', mesh: FAC.house, beh: 'static', r: 9, label: true, where: '서도 동쪽 바닷가', place: 'ground', desc: '독도 주민이 사는 집이에요.', fact: '독도에는 주소를 두고 실제로 사는 주민이 있어요. 주소는 경상북도 울릉군 울릉읍 독도리예요.' }),
-  flag: K({ name: '태극기', group: 'fac', icon: '🇰🇷', mesh: FAC.flag, anim: 4, animP: [5, 2.2, 0.28, 0], two: 1, beh: 'static', r: 3, where: '동도', place: 'ground', desc: '독도가 대한민국 땅임을 보여 주는 태극기예요.', fact: '독도의 태극기는 바닷바람을 맞으며 늘 힘차게 펄럭여요.' }),
-  post: K({ name: '독도 우체통', group: 'fac', icon: '📮', mesh: FAC.post, beh: 'static', r: 1.2, where: '동도', place: 'ground', desc: '독도에서도 편지를 보낼 수 있는 빨간 우체통이에요.', fact: '독도의 우편번호는 40240이에요.' }),
-  inscr: K({ name: '한국령 각석문', group: 'fac', icon: '🪧', mesh: FAC.inscription, beh: 'static', r: 2, where: '동도 바위', place: 'ground', desc: '바위에 한자로 韓國領(한국령), 즉 한국 땅이라고 새겨 놓았어요.', fact: '1954년 독도의용수비대가 새겼어요. 독도의용수비대는 독도를 지키려고 스스로 모인 사람들이에요.' }),
-  territory: K({ name: '영토 표지석', group: 'fac', icon: '🗿', mesh: FAC.territory, beh: 'static', r: 1.8, where: '동도', place: 'ground', desc: '대한민국 독도라고 새긴 돌 표지석이에요.', fact: '이곳이 우리나라 영토임을 알리는 표시예요.' }),
+  house: K({ name: '주민숙소', group: 'fac', icon: '🏠', mesh: FAC.house, beh: 'static', r: 9, label: true, where: '서도 동쪽 바닷가 (동도 선착장 맞은편)', place: 'ground', desc: '독도 주민이 사는 4층 벽돌 건물이에요. 절벽에 바짝 붙어 있고, 앞마당은 작은 서도 선착장이에요. 동도 선착장에서 바다 건너 정면으로 보여요.', fact: '독도에는 주소를 두고 실제로 사는 주민이 있어요. 주소는 경상북도 울릉군 울릉읍 독도리예요.' }),
+  flag: K({ name: '태극기', group: 'fac', icon: '🇰🇷', mesh: FAC.flag, anim: 4, animP: [5, 2.2, 0.28, 0], two: 1, beh: 'static', r: 3, where: '동도 선착장과 등대 가는 길', place: 'ground', desc: '독도가 대한민국 땅임을 보여 주는 태극기예요.', fact: '독도의 태극기는 바닷바람을 맞으며 늘 힘차게 펄럭여요.' }),
+  post: K({ name: '독도 우체통', group: 'fac', icon: '📮', mesh: FAC.post, beh: 'static', r: 1.2, where: '동도 독도경비대 앞', place: 'ground', desc: '독도에서도 편지를 보낼 수 있는 빨간 우체통이에요.', fact: '독도의 우편번호는 40240이에요.' }),
+  inscr: K({ name: '한국령 각석문', group: 'fac', icon: '🪧', mesh: FAC.inscription, beh: 'static', r: 2, where: '동도 독도경비대 숙소 옆 바위', place: 'ground', desc: '바위에 한자로 韓國領(한국령), 즉 한국 땅이라고 새겨 놓았어요.', fact: '1954년 독도의용수비대가 새겼어요. 독도의용수비대는 독도를 지키려고 스스로 모인 사람들이에요.' }),
+  territory: K({ name: '영토 표지석', group: 'fac', icon: '🗿', mesh: FAC.territory, beh: 'static', r: 1.8, where: '동도 선착장', place: 'ground', desc: '대한민국 독도라고 새긴 돌 표지석이에요. 선착장에 내려 독도 땅을 밟으면 가장 먼저 만나요.', fact: '이곳이 우리나라 영토임을 알리는 표시예요.' }),
   sign1: K({ name: '도로명판 독도이사부길', group: 'fac', icon: '🪧', mesh: FAC.sign1, beh: 'static', r: 1.6, where: '동도 선착장', place: 'ground', desc: '동도의 도로명은 독도이사부길이에요.', fact: '이사부는 512년 우산국(지금의 울릉도·독도)을 신라 땅으로 만든 장군이에요.' }),
   sign2: K({ name: '도로명판 독도안용복길', group: 'fac', icon: '🪧', mesh: FAC.sign2, beh: 'static', r: 1.6, where: '서도', place: 'ground', desc: '서도의 도로명은 독도안용복길이에요.', fact: '안용복은 조선 숙종 때 일본에 건너가 울릉도와 독도가 조선 땅임을 당당히 밝힌 어부예요.' }),
   spring: K({ name: '물골', group: 'fac', icon: '💧', mesh: FAC.spring, beh: 'static', r: 3, where: '서도 북서쪽', place: 'ground', desc: '서도의 바위틈에서 물이 조금씩 고이는 샘이에요.', fact: '바닷물로 둘러싸인 독도에서 사람이 마실 수 있는 물을 얻을 수 있는 귀한 곳이에요.' }),
@@ -63,11 +67,11 @@ const KINDS = {
   net: K({ name: '버려진 그물', group: 'res', icon: '🕸️', mesh: netMesh, two: 1, beh: 'static', r: 1.6, place: 'water', game: true, desc: '', fact: '' }),
   racer: K({ name: '강치 가이드', group: 'res', icon: '🦭', mesh: () => sealionMesh(true), anim: 6, animP: [3.2, 2, 0.09, 0], beh: 'static', r: 1.1, gloss: 0.35, place: 'water', game: true, desc: '', fact: '' }),
   boat: K({ name: '탐험 보트', group: 'fac', icon: '🚤', mesh: boatMesh, beh: 'boat', two: 1, r: 4.2, gloss: 0.35, label: true, where: '동도 선착장 앞바다', place: 'sea', desc: '독도 둘레를 돌아볼 수 있는 작은 보트예요. 탐험가 모드에서 〈배 타기〉를 누르면 직접 운전할 수 있어요.', fact: '실제로 독도에 가려면 울릉도에서 여객선을 타고 1시간 30분 정도 바다를 건너야 해요.' }),
-  alpine: K({ name: '산악회 표석', group: 'fac', icon: '🪨', mesh: FAC.stone, beh: 'static', r: 1, where: '동도', place: 'ground', desc: '한국산악회가 독도를 조사하고 세운 표석이에요.', fact: '광복 뒤 여러 차례 독도 학술 조사가 이루어졌어요.' })
+  alpine: K({ name: '산악회 표석', group: 'fac', icon: '🪨', mesh: FAC.stone, beh: 'static', r: 1, where: '동도 선착장 뒤 절벽 가장자리', place: 'ground', desc: '한국산악회가 독도를 조사하고 세운 표석이에요.', fact: '광복 뒤 여러 차례 독도 학술 조사가 이루어졌어요.' })
 };
 /* terrain / sea info cards (not elements) */
 const AREA_INFO = {
-  dongdo: { name: '동도', icon: '⛰️', group: '섬', where: '독도의 동쪽 섬', desc: '높이 약 98.6m의 섬이에요. 선착장, 독도경비대, 등대, 헬기장이 있어요. 도로명은 독도이사부길이에요.', fact: '섬 가운데에는 바닷물과 이어진 깊은 구멍, 천장굴이 있어요.' },
+  dongdo: { name: '동도', icon: '⛰️', group: '섬', where: '독도의 동쪽 섬', desc: '높이 약 98.6m의 섬이에요. 서쪽 바닷가에 선착장이 있고, 계단길과 케이블을 따라 올라가면 독도경비대, 등대, 헬기장이 있어요. 도로명은 독도이사부길이에요.', fact: '섬 가운데에는 바닷물과 이어진 깊은 구멍, 천장굴이 있어요.' },
   seodo: { name: '서도', icon: '🏔️', group: '섬', where: '독도의 서쪽 섬', desc: '높이 약 168.5m로 동도보다 높고 가팔라요. 주민숙소와 물골이 있어요. 도로명은 독도안용복길이에요.', fact: '독도는 동도, 서도와 89개의 부속 섬, 모두 91개의 섬으로 이루어져 있어요.' },
   cheonjang: { name: '천장굴', icon: '🕳️', group: '지형', where: '동도 가운데', desc: '동도 한가운데가 깊게 꺼져 바닷물이 들어와 있는 구멍이에요.', fact: '화산섬이 파도에 깎이고 무너지면서 생긴 특별한 지형이에요.' },
   sea: { name: '독도 바다', icon: '🌊', group: '바다', where: '독도 주변', desc: '따뜻한 바닷물(난류)과 차가운 바닷물(한류)이 만나는 곳이에요. 이런 곳을 조경수역이라고 해요.', fact: '조경수역에는 물고기의 먹이인 플랑크톤이 많아서 물고기가 아주 많이 모여요.' },
@@ -78,10 +82,11 @@ const DEFAULT_ELEMS = [
   ['gate', 339, 0, 93, 0.3], ['candle', -99, 0, 91, 1.2], ['threecaves', -65, 0, -105, 0.4], ['tanggeon', -218, 0, -246, 0.2], ['elephant', -359, 0, 51, 2.6],
   ['face', 290, 0, 166, -0.6], ['fan', 125, 0, 222, 0.15], ['chicken', 49, 0, -91, 2.2], ['whetstone', 49, 0, 144, 0.5], ['gaje', -290, 0, -287, 0.3],
   ['bochal', -380, 0, 112, 1.0], ['peninsula', 271, 0, -104, 0.7],
-  ['quay', 200, 1.2, 181, 0], ['guard', 222, 0, 6, 0.3], ['light', 243, 0, 26, 1.1], ['heli', 166, 0, 4, 0.2], ['house', -121, 0, 47, 1.57],
-  ['flag', 208, 0, 184, 0.4], ['flag', 205, 0, 41, 0.4], ['post', 204, 0, 45, -0.5], ['inscr', 199, 0, 42, 2.4], ['territory', 169, 0, 75, 0.3],
-  ['sign1', 188, 0, 184, 0.1], ['sign2', -116, 0, 40, 1.4], ['spring', -312, 0, -166, 0.6], ['bench', 220, 0, -10, 0], ['bench', 181, 0, 185, 0],
-  ['camera', 226, 0, -15, 2.4], ['alpine', 278, 0, 100, 0], ['boat', 208, 0, 205, 0],
+  ['quay', 60, 1.2, 108, -1.5708], ['guard', 222, 0, 6, 0.3], ['light', 243, 0, 26, 1.1], ['heli', 166, 0, 4, 0.2], ['house', -128, 0, 47, 1.5708],
+  ['stairs', 0, 0, 0, 0], ['cable', 0, 0, 0, 0], ['seostairs', 0, 0, 0, 0],
+  ['flag', 64, 0, 96, 0.4], ['flag', 205, 0, 41, 0.4], ['post', 220, 0, 19, 0.3], ['inscr', 215, 0, 15, -0.27], ['territory', 62.5, 0, 101, -1.4],
+  ['sign1', 63, 0, 116, -1.3], ['sign2', -117, 0, 41, 1.5], ['spring', -307, 0, -164, 0.6], ['bench', 220, 0, -10, 0], ['bench', 59.5, 0, 113, 0],
+  ['camera', 226, 0, -15, 2.4], ['alpine', 71, 0, 98, -1.2], ['boat', 37, 0, 106, 1.5708],
   ['gull', 205, 20, 200, 0], ['gull', 60, 28, 150, 0], ['gull', -120, 32, 100, 0], ['gull', -300, 45, -150, 0], ['gull', 300, 24, 20, 0], ['gull', -40, 18, 10, 0], ['gull', -200, 60, -240, 0],
   ['gullsit', 240, 0, 60, 0], ['gullsit', -250, 0, -100, 0], ['gullsit', -200, 0, 20, 0], ['gullsit', 60, 0, 40, 0], ['gullsit', 200, 0, 150, 0], ['gullsit', -300, 0, -40, 0],
   ['petrel', 20, 18, -60, 0], ['petrel', 250, 20, -60, 0],
@@ -97,8 +102,8 @@ const DEFAULT_ELEMS = [
   ['kelp', -60, 0, -32, 0], ['kelp', 170, 0, 218, 0], ['kelp', 250, 0, 205, 0], ['tunicate', 262, 0, 212, 0], ['tunicate', -52, 0, -48, 0], ['hydrate', -10, 0, -205, 0],
   ['sealion', -292, 5, -287, 0.4], ['sealion', -283, 4.5, -292, 2.8], ['sealion', -298, 4, -282, 1.6],
   ['gull', 110, 45, 60, 0], ['gull', -220, 80, -90, 0], ['gull', 250, 30, 150, 0], ['gullsit', 110, 0, 158, 0], ['gullsit', -150, 0, 70, 0], ['gullsit', 150, 0, 60, 0],
-  ['petrel', 120, 24, 183, 0], ['petrel', -260, 30, 20, 0], ['egret', 196, 0, 190, 0], ['aster', 183, 0, 138, 0], ['aster', 140, 0, 120, 0], ['aster', -140, 0, 20, 0],
-  ['sedum', 181, 0, 130, 0], ['sedum', -150, 0, 60, 0], ['euonymus', 184, 0, 131, 0]
+  ['petrel', 120, 24, 183, 0], ['petrel', -260, 30, 20, 0], ['egret', 62, 0, 112, 0], ['aster', 183, 0, 138, 0], ['aster', 140, 0, 120, 0], ['aster', -140, 0, 20, 0],
+  ['sedum', 181, 0, 130, 0], ['sedum', -150, 0, 60, 0], ['euonymus', 124, 0, 50, 0]
 ];
 
 const SCN = { elems: [], uid: 1, meshes: {}, sel: null, t: 0 };
@@ -118,7 +123,7 @@ function groundY(x, z) {
   for (const q of SCN.elems) { // standing on the quay deck, not under it
     if (q.kind !== 'quay' || q.hidden) continue;
     const c = Math.cos(q.yaw), sn = Math.sin(q.yaw), dx = x - q.x, dz = z - q.z, lx = (c * dx - sn * dz) / q.s, lz = (sn * dx + c * dz) / q.s;
-    if (Math.abs(lx) < 16.5 && lz > 2.3 && lz < 13.7) h = Math.max(h, q.y + 2.5 * q.s);
+    if (Math.abs(lx) < 20.5 && lz > -6 && lz < 13.8) h = Math.max(h, q.y + 2.5 * q.s);
   }
   return h;
 }
@@ -140,10 +145,22 @@ function layoutElem(e) {
     for (let i = 0; i < k.n; i++) e.sub.push({ ox: (rnd() - .5) * 2, oy: (rnd() - .5) * 2, oz: (rnd() - .5) * 2, ph: rnd() * TAU, sp: 0.75 + rnd() * 0.5, s: k.s * (0.8 + rnd() * 0.4), r: 0.5 + rnd() * 0.5 });
   }
 }
+/* stairs and the cable are built along fixed paths, so they sit at their own anchor */
+function kindAnchor(kind) { const k = KINDS[kind]; return k.route ? routeAnchor(k.route) : k.cable ? cableGeo().anchor : null; }
+/* elements that moved in this version: [kind, old default x, old z] → new default (only if the saved one was never moved) */
+const MOVED_V2 = [['quay', 200, 181], ['house', -121, 47], ['flag', 208, 184], ['post', 204, 45], ['inscr', 199, 42], ['territory', 169, 75], ['sign1', 188, 184], ['sign2', -116, 40],
+  ['spring', -312, -166], ['bench', 181, 185], ['alpine', 278, 100], ['boat', 208, 205], ['egret', 196, 190], ['euonymus', 184, 131]];
+function migrateSaved(list) {
+  const NEW = { quay: [60, 108, -1.5708], house: [-128, 47, 1.5708], flag: [64, 96, 0.4], post: [220, 19, 0.3], inscr: [215, 15, -0.27], territory: [62.5, 101, -1.4], sign1: [63, 116, -1.3], sign2: [-117, 41, 1.5],
+    spring: [-307, -164, 0.6], bench: [59.5, 113, 0], alpine: [71, 98, -1.2], boat: [37, 106, 1.5708], egret: [62, 112, 0], euonymus: [124, 50, 0] };
+  for (const s of list) for (const [kind, ox, oz] of MOVED_V2) if (s.kind === kind && Math.abs(s.x - ox) < 1.5 && Math.abs(s.z - oz) < 1.5) { const n = NEW[kind]; s.x = n[0]; s.z = n[1]; s.yaw = n[2]; }
+  for (const kind of ['stairs', 'cable', 'seostairs']) if (!list.some(s => s.kind === kind)) list.push({ kind, x: 0, y: 0, z: 0, yaw: 0, s: 1 });
+}
 function sceneInit(saved) {
   SCN.elems = [];
-  if (saved && saved.elems) { for (const s of saved.elems) if (KINDS[s.kind]) { const e = newElem(s.kind, s.x, s.y, s.z, s.yaw, s.s); e.hidden = !!s.hidden; SCN.elems.push(e); } }
-  else for (const [kind, x, y, z, yaw] of DEFAULT_ELEMS) SCN.elems.push(newElem(kind, x, y, z, yaw, 1));
+  const mk = (kind, x, y, z, yaw, s) => { const a = kindAnchor(kind); if (a && !x && !z) { x = a[0]; y = a[1]; z = a[2]; } return newElem(kind, x, y, z, yaw, s); };
+  if (saved && saved.elems) { if (!(saved.v >= 2)) migrateSaved(saved.elems); for (const s of saved.elems) if (KINDS[s.kind]) { const e = mk(s.kind, s.x, s.y, s.z, s.yaw, s.s); e.hidden = !!s.hidden; SCN.elems.push(e); } }
+  else for (const [kind, x, y, z, yaw] of DEFAULT_ELEMS) SCN.elems.push(mk(kind, x, y, z, yaw, 1));
   stampRocks();
 }
 function sceneSerialize() { return SCN.elems.map(e => ({ kind: e.kind, x: +e.x.toFixed(2), y: +e.y.toFixed(2), z: +e.z.toFixed(2), yaw: +e.yaw.toFixed(3), s: +e.s.toFixed(3), hidden: e.hidden || undefined })); }
@@ -175,8 +192,9 @@ function elemInstances(e, T, out) {
     for (const s of e.sub) {
       const lx = s.ox * k.spread * e.s + Math.sin(t * 0.7 * s.sp + s.ph) * 0.6, lz = s.oz * k.spread * 0.6 * e.s, ly = s.oy * k.spread * 0.3 * e.s;
       let x = cx + ch * lx + sh * lz, z = cz - sh * lx + ch * lz, y = cy + ly + Math.sin(t * 1.1 + s.ph) * 0.2;
-      const g = groundY(x, z); y = clamp(y, g + 0.8, -0.9);
-      out(x, y, z, s.s * e.s, yaw + Math.sin(t * 1.3 + s.ph) * 0.18, Math.sin(t * 0.9 + s.ph) * 0.08, 0, s.ph);
+      const g = groundY(x, z), fade = smooth(-1.0, -2.8, g); if (fade < 0.02) continue; // never above the island
+      y = Math.min(Math.max(y, g + 0.8), -0.9);
+      out(x, y, z, s.s * e.s * fade, yaw + Math.sin(t * 1.3 + s.ph) * 0.18, Math.sin(t * 0.9 + s.ph) * 0.08, 0, s.ph);
     }
     return;
   }
@@ -185,8 +203,11 @@ function elemInstances(e, T, out) {
       const w = 0.12 * s.sp / Math.max(0.5, e.s), a = t * w + s.ph, R = k.spread * s.r * e.s;
       const x = e.x + Math.cos(a) * R + s.ox * 3, z = e.z + Math.sin(a * 1.3) * R * 0.6 + s.oz * 3;
       const dx = -Math.sin(a) * R, dz = Math.cos(a * 1.3) * R * 0.78;
-      let y = e.y + s.oy * 2 + Math.sin(a * 0.7) * 1.5; const g = groundY(x, z); y = clamp(y, g + 1.2, -1.2);
-      out(x, y, z, s.s * e.s, Math.atan2(-dz, dx), Math.sin(a * 0.7) * 0.1, 0, s.ph);
+      // keep swimmers in the water: where the sea floor rises toward the shore they shrink away
+      // instead of being pushed up onto the rocks (해파리가 섬 위로 떠오르던 문제)
+      const g = groundY(x, z), fade = smooth(-1.4, -3.6, g); if (fade < 0.02) continue;
+      const y = Math.min(Math.max(e.y + s.oy * 2 + Math.sin(a * 0.7) * 1.5, g + 1.2), -1.2);
+      out(x, y, z, s.s * e.s * fade, Math.atan2(-dz, dx), Math.sin(a * 0.7) * 0.1, 0, s.ph);
     }
     return;
   }
@@ -211,6 +232,7 @@ function sceneUpdateInstances(T) {
   }
   const add = (kind, x, y, z, s, yaw, pitch, roll, ph) => (bufs[kind] || (bufs[kind] = [])).push(x, y, z, s, yaw, pitch, roll, ph, 0, 0, 0, 1);
   AMBIENT.instances(T, add);
+  cablecarInstance(T, add);
   if (typeof GAME !== 'undefined' && GAME.on) GAME.instances(T, add);
   for (const [id, m] of Object.entries(SCN.meshes)) {
     const a = bufs[id]; m.n = a ? a.length / 12 : 0; if (!m.n) continue;
@@ -222,10 +244,31 @@ function sceneUpdateInstances(T) {
   }
 }
 
+/* 케이블 운반차: 아래 정류장에서 쉬었다가 올라가고, 위에서 쉬었다가 내려와요 */
+function cablecarU(T) {
+  const P = 70, t = ((T % P) + P) % P;
+  if (t < 8) return 0; if (t < 33) return smooth(0, 1, (t - 8) / 25); if (t < 43) return 1; if (t < 66) return 1 - smooth(0, 1, (t - 43) / 23); return 0;
+}
+function cablecarInstance(T, add) {
+  const ce = SCN.elems.find(e => e.kind === 'cable' && !e.hidden); if (!ce || !CABLE.geo) return;
+  const u = 0.035 + cablecarU(T) * 0.93, p = cableLocal(u), c = Math.cos(ce.yaw), sn = Math.sin(ce.yaw);
+  const x = ce.x + (c * p[0] + sn * p[2]) * ce.s, z = ce.z + (-sn * p[0] + c * p[2]) * ce.s, y = ce.y + p[1] * ce.s;
+  add('cablecar', x, y, z, ce.s, ce.yaw + CABLE.geo.yaw, 0, 0, 0);
+}
+/* sample points along a stairs/cable element, in world space */
+function elemPathPts(e) {
+  const k = KINDS[e.kind], c = Math.cos(e.yaw), sn = Math.sin(e.yaw), out = [], A = kindAnchor(e.kind);
+  const w = (lx, ly, lz) => out.push([e.x + (c * lx + sn * lz) * e.s, e.y + ly * e.s, e.z + (-sn * lx + c * lz) * e.s]);
+  if (k.route) { const rt = ROUTES[k.route]; for (let s = 0; s <= rt.len; s += 7) { const p = routeAt(rt, s); w(p.x - A[0], p.y - A[1], p.z - A[2]); } }
+  else for (let u = 0; u <= 1.0001; u += 0.06) { const p = cableLocal(u); w(p[0], p[1], p[2]); }
+  return out;
+}
+
 /* picking: ray vs spheres around each sub-instance */
 function elemSpheres(e, T, cb) {
   const k = KINDS[e.kind];
   if (k.beh === 'rock') { cb(e.x, (k.top || 10) * 0.42 * e.s, e.z, k.r * 0.72 * e.s); return; }
+  if (k.route || k.cable) { for (const p of elemPathPts(e)) cb(p[0], p[1] + 0.8, p[2], 3.2 * e.s); return; }
   if (k.beh === 'static' || k.beh === 'plume' || k.beh === 'rest' || k.beh === 'boat') { cb(e.x, e.y + k.r * 0.3 * e.s * k.s, e.z, k.r * e.s * k.s); return; }
   let n = 0;
   elemInstances(e, T, (x, y, z, s) => { cb(x, y + k.r * s * 0.4, z, Math.max(k.r * s * 2.2, 0.55), n); n++; });
@@ -255,7 +298,7 @@ function elemFocus(e, T, sub) {
   if (!n) return { c: [e.x, e.y, e.z], r: 2 };
   const c = [sx / n, sy / n, sz / n]; let spread = 0;
   elemSpheres(e, T, (x, y, z) => { spread = Math.max(spread, Math.hypot(x - c[0], y - c[1], z - c[2])); });
-  const r = k.beh === 'rock' || k.beh === 'static' || k.beh === 'plume' || k.beh === 'rest' || k.beh === 'boat' ? rr : clamp(spread * 0.5, rr * 0.8, 8);
+  const r = k.route || k.cable ? spread * 0.55 : k.beh === 'rock' || k.beh === 'static' || k.beh === 'plume' || k.beh === 'rest' || k.beh === 'boat' ? rr : clamp(spread * 0.5, rr * 0.8, 8);
   return { c, r };
 }
 function areaAt(p) {
@@ -280,7 +323,8 @@ const AMBIENT = {
     }
     if (c[1] < 1.5) for (const f of this.fish) {
       const a = T * f.w + f.ph, x = C[0] + Math.cos(a) * f.r, z = C[2] + Math.sin(a) * f.r * 0.8, g = TER.heightAt(x, z);
-      const y = clamp(Math.min(c[1], -1.5) + f.h * 3 + Math.sin(T + f.ph) * 0.4, g + 0.8, -1);
+      if (g > -2) continue;
+      const y = Math.min(Math.max(Math.min(c[1], -1.5) + f.h * 3 + Math.sin(T + f.ph) * 0.4, g + 0.8), -1);
       add('damsel', x, y, z, 1.7, Math.atan2(-Math.cos(a) * 0.8, -Math.sin(a)), 0, 0, f.ph);
     }
   }

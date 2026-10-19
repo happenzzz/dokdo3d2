@@ -40,14 +40,65 @@ function boxBlur(src, W, D, r) {
   return out;
 }
 
+/* 독도 선착장(접안시설)은 동도 서쪽 바닷가, 서도를 마주 보는 곳에 있어요.
+   선착장에 서면 바다 건너 서도 동쪽 바닷가의 주민숙소가 정면으로 보여요. */
 const PADS = [
-  { name: 'quay', x: 199, z: 187, r: 11, f: 7, h: 3.3, force: true },
-  { name: 'quay2', x: 212, z: 193, r: 6, f: 5, h: 3.2, force: true },
-  { name: 'house', x: -121, z: 47, r: 8, f: 7, h: 6.5 },
+  { name: 'quay', x: 51, z: 96, r: 8, f: 5, h: 3.3, force: true },
+  { name: 'quay2', x: 51, z: 108, r: 8, f: 5, h: 3.3, force: true },
+  { name: 'quay3', x: 51, z: 120, r: 8, f: 5, h: 3.3, force: true },
+  { name: 'apron', x: 63, z: 108, r: 9, f: 8, h: 3.7 },
+  { name: 'cableLow', x: 69, z: 121, r: 4, f: 5, h: 5.5 },
+  { name: 'house', x: -127, z: 47, r: 9, f: 4, h: 3.6, force: true },
+  { name: 'seoquay', x: -119, z: 47, r: 6, f: 3, h: 2.2, force: true },
+  { name: 'seostair', x: -123.5, z: 56.5, r: 3.6, f: 3, h: 3.4, force: true },   // 998계단이 시작되는 숙소 옆 바위턱
+  { name: 'spring', x: -306, z: -163, r: 6, f: 4, h: 2.4, force: true },
   { name: 'guard', x: 222, z: 6, r: 11, f: 10 },
+  { name: 'guardYard', x: 214, z: 18, r: 8, f: 7, same: 'guard' },   // 경비대 앞마당 (계단길이 닿는 곳)
+  { name: 'cableTop', x: 196, z: 36, r: 4, f: 5 },
   { name: 'light', x: 243, z: 26, r: 6, f: 6 },
   { name: 'heli', x: 166, z: 4, r: 12, f: 9 }
 ];
+
+/* 계단길: 동도 선착장 → 독도경비대 숙소(경비대 등반로), 서도 주민숙소 → 물골(998계단).
+   지형을 길 모양대로 살짝 깎아 계단을 놓아요. pts는 위에서 본 x,z 좌표예요. */
+const ROUTES = {
+  guard: { w: 1.4, pts: [[64, 110], [66, 101], [72, 93], [80, 98], [87, 102], [95, 111], [103, 113], [110, 107], [118, 100], [131, 92], [140, 83], [153, 75], [166, 70], [176, 68], [186, 61], [193, 51], [200, 42], [207, 31], [213, 22]] },
+  seo: { w: 1.1, pts: [[-123, 57], [-128, 59], [-132, 66], [-140, 69], [-155, 77], [-166, 93], [-176, 93], [-186, 83], [-195, 73], [-205, 64], [-212, 52], [-217, 42], [-222, 24], [-231, 10], [-248, 8], [-268, 5], [-282, -12], [-295, -31], [-310, -42], [-320, -55], [-328, -76], [-331, -92], [-328, -110], [-328, -132], [-332, -148], [-326, -157], [-314, -163], [-308, -163]] }
+};
+/* 물자 운반 케이블(삭도): 선착장 옆 아래 정류장 → 경비대 숙소 앞 위 정류장 */
+const CABLE = { a: [69, 121], b: [196, 36] };
+
+/* densify a route to ~1m samples, smooth its height profile and cut it into the slope */
+function routeProfile(rt, H, W, C, X0, Z0) {
+  const hs = (x, z) => { const fx = (x - X0) / C, fz = (z - Z0) / C, ix = fx | 0, iz = fz | 0, tx = fx - ix, tz = fz - iz, b = iz * W + ix; return (H[b] * (1 - tx) + H[b + 1] * tx) * (1 - tz) + (H[b + W] * (1 - tx) + H[b + W + 1] * tx) * tz; };
+  const S = [];
+  for (let i = 0; i < rt.pts.length - 1; i++) {
+    const [ax, az] = rt.pts[i], [bx, bz] = rt.pts[i + 1], n = Math.max(1, Math.ceil(Math.hypot(bx - ax, bz - az)));
+    for (let k = 0; k < n; k++) { const t = k / n; S.push({ x: lerp(ax, bx, t), z: lerp(az, bz, t) }); }
+  }
+  const last = rt.pts[rt.pts.length - 1]; S.push({ x: last[0], z: last[1] });
+  let y = S.map(p => Math.max(hs(p.x, p.z), 2.6));
+  for (let pass = 0; pass < 4; pass++) y = y.map((_, i) => { let s = 0, c = 0; for (let k = -4; k <= 4; k++) { const j = clamp(i + k, 0, y.length - 1); s += y[j]; c++; } return s / c; });
+  let L = 0; S.forEach((p, i) => { if (i) L += Math.hypot(p.x - S[i - 1].x, p.z - S[i - 1].z); p.s = L; p.y = y[i]; });
+  rt.prof = S; rt.len = L;
+}
+function routeCarve(rt, H, L, W, D, C, X0, Z0, RD) {
+  const S = rt.prof, pad = rt.w + 3.5;
+  let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9; for (const p of S) { x0 = Math.min(x0, p.x); x1 = Math.max(x1, p.x); z0 = Math.min(z0, p.z); z1 = Math.max(z1, p.z); }
+  const i0 = Math.max(0, Math.floor((x0 - pad - X0) / C)), i1 = Math.min(W - 1, Math.ceil((x1 + pad - X0) / C));
+  const j0 = Math.max(0, Math.floor((z0 - pad - Z0) / C)), j1 = Math.min(D - 1, Math.ceil((z1 + pad - Z0) / C));
+  for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
+    const k = j * W + i, x = X0 + i * C, z = Z0 + j * C; let bd = 1e9, by = 0;
+    for (let s = 0; s < S.length - 1; s++) { // nearest point on the polyline
+      const a = S[s], b = S[s + 1], dx = b.x - a.x, dz = b.z - a.z, l2 = dx * dx + dz * dz || 1e-6;
+      const t = clamp(((x - a.x) * dx + (z - a.z) * dz) / l2, 0, 1), d = Math.hypot(x - a.x - dx * t, z - a.z - dz * t);
+      if (d < bd) { bd = d; by = lerp(a.y, b.y, t); }
+    }
+    RD[k] = Math.min(RD[k], bd);
+    if (!L[k] || bd > pad) continue;
+    H[k] = lerp(H[k], by - 0.2, 1 - smooth(rt.w, pad, bd));
+  }
+}
 
 function terrainBuild(quality) {
   const { W, D, C, X0, Z0 } = TER, N = W * D;
@@ -96,6 +147,7 @@ function terrainBuild(quality) {
   }
   // flatten pads for facilities
   for (const p of PADS) {
+    if (p.same) p.h = PADS.find(q => q.name === p.same).h;
     if (p.h === undefined) { let s = 0, c = 0; for (let i = 0; i < N; i++) { if (L[i] && Math.hypot(wx(i) - p.x, wz(i) - p.z) < p.r) { s += H[i]; c++; } } p.h = c ? s / c : 5; }
     for (let i = 0; i < N; i++) {
       const d = Math.hypot(wx(i) - p.x, wz(i) - p.z); if (d > p.r + p.f) continue;
@@ -104,6 +156,9 @@ function terrainBuild(quality) {
       H[i] = lerp(H[i], p.h, t);
     }
   }
+  // stair routes cut into the slopes
+  TER.RD = new Float32Array(N).fill(99);
+  for (const rt of Object.values(ROUTES)) { routeProfile(rt, H, W, C, X0, Z0); routeCarve(rt, H, L, W, D, C, X0, Z0, TER.RD); }
   dOut = edt2(W, D, i => L[i]);
   // seabed
   for (let i = 0; i < N; i++) {
@@ -162,6 +217,7 @@ function terrainMaterials(blur) {
     v *= 0.72 + 0.6 * noise2(x * 0.018 + 7, z * 0.018, 'r');
     v *= x < -20 ? 1.18 : 0.95;
     for (const p of PADS) { const dd = Math.hypot(x - p.x, z - p.z); if (dd < p.r + 4) v *= smooth(p.r * 0.6, p.r + 4, dd); }
+    if (TER.RD) v *= 0.35 + 0.65 * smooth(1.2, 4.5, TER.RD[k]);
     V[k] = clamp(v, 0, 1);
   }
 }
@@ -245,6 +301,18 @@ TER.heightAt = function (x, z) {
   if (fx < 0 || fz < 0 || fx >= W - 1 || fz >= D - 1) return -45.3;
   const ix = fx | 0, iz = fz | 0, tx = fx - ix, tz = fz - iz, b = iz * W + ix;
   return (H[b] * (1 - tx) + H[b + 1] * tx) * (1 - tz) + (H[b + W] * (1 - tx) + H[b + W + 1] * tx) * tz;
+};
+/* true when (x,z) is on one of the stair routes: there you can walk up even where the slope is steep */
+TER.onStairs = function (x, z) {
+  for (const rt of Object.values(ROUTES)) {
+    const S = rt.prof; if (!S) continue; const lim = rt.w * 0.5 + 0.6;
+    for (let i = 0; i < S.length - 1; i += 1) {
+      const a = S[i], b = S[i + 1]; if (Math.abs(a.x - x) > 4 || Math.abs(a.z - z) > 4) continue;
+      const dx = b.x - a.x, dz = b.z - a.z, l2 = dx * dx + dz * dz || 1e-6, t = clamp(((x - a.x) * dx + (z - a.z) * dz) / l2, 0, 1);
+      if (Math.hypot(x - a.x - dx * t, z - a.z - dz * t) < lim) return true;
+    }
+  }
+  return false;
 };
 TER.normalAt = function (x, z) {
   const e = 1.5, l = TER.heightAt(x - e, z), r = TER.heightAt(x + e, z), u = TER.heightAt(x, z - e), d = TER.heightAt(x, z + e);

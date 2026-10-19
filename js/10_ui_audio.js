@@ -103,7 +103,7 @@ const DEX = {
 let saveTimer = null;
 function saveLater() { clearTimeout(saveTimer); saveTimer = setTimeout(saveNow, 700); }
 function saveNow() {
-  try { localStorage.setItem('dokdo3d.scene', JSON.stringify({ v: 1, elems: sceneSerialize(), ter: TER.serialize(), sea: seaState() })); UI.saved(); }
+  try { localStorage.setItem('dokdo3d.scene', JSON.stringify({ v: 2, elems: sceneSerialize(), ter: TER.serialize(), sea: seaState() })); UI.saved(); }
   catch (e) { UI.toast('저장 공간이 부족해서 자동 저장을 못 했어요. 파일로 내보내 주세요.'); }
 }
 function loadSaved() { try { return JSON.parse(localStorage.getItem('dokdo3d.scene') || 'null'); } catch (e) { return null; } }
@@ -311,7 +311,7 @@ const UI = {
     on('#tReset', async () => { if (await UI.ask('지형을 처음 모양으로 되돌릴까요?')) { devSnapshot(true); TER.reset(); relayoutAll(); saveLater(); } });
     on('#dUndo', devUndo);
     on('#dExport', async () => {
-      const json = JSON.stringify({ app: 'dokdo3d', v: 1, elems: sceneSerialize(), ter: TER.serialize(), sea: seaState() }), name = '독도3D_장면_' + new Date().toISOString().slice(0, 10) + '.json';
+      const json = JSON.stringify({ app: 'dokdo3d', v: 2, elems: sceneSerialize(), ter: TER.serialize(), sea: seaState() }), name = '독도3D_장면_' + new Date().toISOString().slice(0, 10) + '.json';
       let dl = null; try { if (window.claude && window.claude.use) dl = await window.claude.use('downloads'); } catch (e) { dl = null; }
       if (dl) { try { await dl.save({ filename: name, data: json }); this.toast('장면 파일을 저장했어요 💾'); } catch (e) { if (!e || e.code !== 'declined') this.toast('이 화면에서는 파일 저장을 할 수 없어요'); } return; }
       const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([json], { type: 'application/json' })); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);

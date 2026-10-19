@@ -362,23 +362,40 @@ function windows(mb, x0, x1, y0, y1, z, nx, ny, face = 1, c = col('#233a4a')) {
   }
 }
 const FAC = {
+  /* 접안시설: 길이 방향 = local x, 바다 쪽 = local +z, 땅 쪽 마당(물양장) = local -z */
   quay: () => {
-    const mb = new MB(), con = col('#7a776f');
-    mb.box([0, 1.2, 8], [34, 2.6, 12], n => n[1] > 0.5 ? col('#8d8a80') : V3.mul(con, 0.85));
-    mb.box([0, -2.5, 8], [33, 5, 11], col('#5a5a52'));
-    mb.box([-10, 2.9, 12], [8, 0.8, 3], col('#c2beb2'));
-    for (let i = 0; i < 6; i++) { mb.cyl([-15 + i * 6, 2.5, 13.3], [-15 + i * 6, 2.95, 13.3], 0.16, 0.13, col('#3a3a38'), 8); mb.ellipsoid([-15 + i * 6, 2.97, 13.3], [0.2, 0.08, 0.2], col('#3a3a38'), 8); mb.cyl([-15 + i * 6, 1.6, 14.1], [-15 + i * 6, 2.4, 14.1], 0.35, 0.35, col('#26282a'), 10); }
-    for (let i = 0; i < 18; i++) mb.cyl([-16 + i * 1.9, 2.5, 2.2], [-16 + i * 1.9, 3.5, 2.2], 0.05, 0.05, col('#dddddd'), 4, false);
-    mb.box([0, 3.45, 2.2], [34, 0.08, 0.08], col('#dddddd'));
+    const mb = new MB(), con = col('#7a776f'), top = col('#9a968b');
+    mb.box([0, 1.2, 4], [40, 2.6, 20], n => n[1] > 0.5 ? top : V3.mul(con, 0.85));
+    mb.box([0, -2.7, 8.5], [39.4, 5.4, 11], col('#55564f'));
+    mb.box([0, 2.52, 13.55], [40, 0.04, 0.55], col('#e8c23a'));
+    for (let i = 0; i < 20; i++) mb.box([-19.5 + i * 2.05, 2.53, 13.84], [1.0, 0.045, 0.12], col('#222222'));
+    for (let i = 0; i < 6; i++) {
+      const x = -16.25 + i * 6.5;
+      mb.cyl([x, 2.5, 12.7], [x, 2.95, 12.7], 0.16, 0.13, col('#3a3a38'), 8); mb.ellipsoid([x, 2.97, 12.7], [0.22, 0.08, 0.22], col('#3a3a38'), 8);
+      mb.cyl([x + 3.25, 0.9, 14.25], [x + 3.25, 2.35, 14.25], 0.36, 0.36, col('#26282a'), 10);
+    }
+    // 바다로 내려가는 계단 (북쪽 끝)
+    for (let k = 0; k < 6; k++) mb.box([-18.2, 2.2 - k * 0.42, 15.2 + k * 0.5], [3.2, 0.42, 0.5], col('#8a867c'));
+    // 마당 쪽 화단 턱과 안내판
+    mb.box([10, 2.75, -4.4], [12, 0.5, 0.6], col('#a8a398'));
+    mb.box([-12, 2.75, -4.4], [8, 0.5, 0.6], col('#a8a398'));
+    for (const x of [16.2, 17.8]) mb.cyl([x, 2.5, -2.5], [x, 4.2, -2.5], 0.05, 0.05, col('#8a8a8a'), 5, false);
+    mb.box([17, 4.25, -2.5], [2.2, 1.0, 0.08], col('#24508f')); mb.box([17, 4.25, -2.45], [2.0, 0.8, 0.02], col('#e8eef6'));
     return mb.build();
   },
+  /* 독도경비대 숙소: 3층 건물, 앞(local +z)은 계단길이 올라오는 쪽 */
   guard: () => {
-    const mb = new MB(), wall = col('#d8d2c4'), roof = col('#2f5f8a');
-    mb.box([0, 3.5, 0], [18, 7, 10], wall); mb.box([0, 7.2, 0], [18.6, 0.5, 10.6], roof);
-    mb.box([5, 9.5, 0], [7, 4, 7], wall); mb.box([5, 11.7, 0], [7.5, 0.4, 7.5], roof);
-    windows(mb, -8, 8, 1.2, 6.5, 5, 7, 2); windows(mb, -8, 8, 1.2, 6.5, -5, 7, 2, -1);
-    mb.cyl([-6, 7.4, -2], [-6, 20, -2], 0.35, 0.12, col('#c8c8c8'), 6); for (let k = 0; k < 4; k++) mb.box([-6, 10 + k * 2.6, -2], [1.6, 0.1, 0.1], col('#bbbbbb'));
-    mb.ellipsoid([6.5, 12.6, 1.5], [1.1, 1.1, 1.1], col('#f2f2f2'), 10);
+    const mb = new MB(), wall = col('#e4ded0'), roof = col('#2f5f8a'), band = col('#a9a397');
+    mb.box([0, 5.25, 0], [18, 10.5, 10], wall);
+    for (const y of [3.5, 7]) mb.box([0, y, 0], [18.2, 0.22, 10.2], band);
+    mb.box([0, 10.75, 0], [18.6, 0.5, 10.6], roof);
+    mb.box([5, 12.5, 0], [7, 3.5, 7], wall); mb.box([5, 14.45, 0], [7.5, 0.4, 7.5], roof);
+    windows(mb, -8, 8, 0.9, 10.2, 5, 7, 3); windows(mb, -8, 8, 0.9, 10.2, -5, 7, 3, -1);
+    mb.box([-5.5, 1.2, 5.06], [1.8, 2.4, 0.12], col('#40566a')); mb.box([-5.5, 2.75, 5.8], [3.2, 0.18, 1.6], roof);
+    for (let k = 0; k < 3; k++) mb.box([-5.5, -0.1 - k * 0.2, 5.4 + k * 0.4], [2.6, 0.4, 0.4], col('#b4aea2'));
+    mb.cyl([-6, 11, -2], [-6, 24, -2], 0.35, 0.12, col('#c8c8c8'), 6); for (let k = 0; k < 4; k++) mb.box([-6, 13 + k * 2.6, -2], [1.6, 0.1, 0.1], col('#bbbbbb'));
+    mb.ellipsoid([6.5, 15.6, 1.5], [1.2, 1.2, 1.2], col('#f2f2f2'), 10);
+    for (let k = 0; k < 3; k++) { mb.at([-2 + k * 2.6, 11.4, -2.5], 0, 0, -0.45); mb.box([0, 0, 0], [2.3, 0.08, 1.6], col('#1f3550')); } mb.at();
     return mb.build();
   },
   light: () => {
@@ -397,12 +414,53 @@ const FAC = {
     mb.box([-2.4, 0.62, 0], [0.8, 0.05, 6], col('#f0f0f0')); mb.box([2.4, 0.62, 0], [0.8, 0.05, 6], col('#f0f0f0')); mb.box([0, 0.62, 0], [4, 0.05, 0.8], col('#f0f0f0'));
     return mb.build();
   },
+  /* 서도 주민숙소: 절벽에 붙은 4층 벽돌 건물 + 계단실 탑, 앞마당(서도 선착장), 크레인, 방파 옹벽.
+     앞(local +z)은 동도 선착장 쪽 바다를 바라봐요. */
   house: () => {
-    const mb = new MB(), wall = col('#eeeae0'), roof = col('#3d6fa0');
-    mb.box([0, 7, 0], [10, 14, 8], wall); mb.box([0, 14.3, 0], [10.6, 0.6, 8.6], roof);
-    windows(mb, -4.3, 4.3, 0.8, 13.5, 4, 4, 4); windows(mb, -4.3, 4.3, 0.8, 13.5, -4, 4, 4, -1);
-    mb.box([0, 1.2, 4.3], [2, 2.4, 0.4], col('#6a4a2a'));
-    mb.box([-2, 15.2, 0], [2, 1.2, 2], col('#a0a0a0'));
+    const mb = new MB(), brick = col('#6e4339'), dark = col('#3b3837'), slab = col('#d9d5cc'), glass = col('#9fc4cf'), rail = col('#cfcfcf');
+    const bw = (n) => n[1] > 0.5 ? slab : brick;
+    // main brick block, floors get a little deeper toward the top like the real building
+    mb.box([1, 6.6, -0.6], [11, 13.2, 8.8], bw);
+    for (let f = 0; f < 4; f++) {
+      const y = 3.3 * f;
+      mb.box([1.2, y + 3.25, 4.4], [11.2, 0.3, 1.8], slab);                      // balcony slab
+      if (f) { mb.box([1.2, y + 0.55, 5.25], [11.2, 0.12, 0.12], rail); for (let i = 0; i < 9; i++) mb.box([-4.2 + i * 1.35, y + 0.28, 5.25], [0.06, 0.55, 0.06], rail); }
+      mb.box([1.2, y + 1.6, 3.82], [10.6, 2.5, 0.1], brick);
+      for (let i = 0; i < 3; i++) mb.box([-2.4 + i * 3.6, y + 1.9, 3.9], [1.7, 1.25, 0.08], glass);
+    }
+    // dark stair tower at the front-left with a narrow window column
+    mb.box([-5.9, 7.7, 1.6], [3.4, 15.4, 3.6], dark);
+    for (let f = 0; f < 4; f++) mb.box([-5.9, 1.9 + f * 3.4, 3.43], [1.25, 1.0, 0.08], glass);
+    mb.box([-6.0, 15.7, 1.4], [4.8, 0.3, 5.0], col('#f1efe9'));
+    mb.box([1.4, 13.45, -0.4], [12.6, 0.3, 10.2], col('#f1efe9'));
+    mb.box([1.4, 13.7, -0.6], [11, 0.2, 8.6], col('#3d6fa0'));
+    // roof: flags, antenna
+    for (const [x, h] of [[-0.5, 3.4], [1.0, 3.0]]) mb.cyl([x, 13.8, -3.6], [x, 13.8 + h, -3.6], 0.05, 0.04, col('#d8d8d8'), 5);
+    mb.at([-0.48, 15.7, -3.6]).panel(1.2, 0.8, 4, 2, ...auv(2, 2, 296, 196), [1, 1, 1], null, true, 0.004); mb.at();
+    mb.box([1.6, 16.2, -3.6], [1.0, 0.6, 0.03], col('#2a6fd0'));
+    mb.ellipsoid([4.6, 14.5, -2.6], [0.65, 0.65, 0.2], col('#efefef'), 10);
+    // ground floor entrance with steps and plastic stools
+    mb.box([-1.2, 1.1, 3.92], [1.6, 2.2, 0.12], col('#40362e'));
+    for (let k = 0; k < 3; k++) mb.box([-1.2, -0.05 - k * 0.0, 4.4 + k * 0.45], [2.4, 0.3 - k * 0.08, 0.45], col('#a9a59b'));
+    for (const x of [2.2, 2.9]) mb.cyl([x, 0, 6.2], [x, 0.75, 6.2], 0.24, 0.2, col('#e8d9b0'), 8);
+    // concrete yard = 서도 선착장, thick enough to read as a sea wall
+    mb.box([0.5, -3.2, 7.4], [17, 6.4, 7.4], n => n[1] > 0.5 ? col('#b8b3a8') : col('#8d897f'));
+    mb.box([-1, -3.7, 12.2], [8, 6.4, 2.8], n => n[1] > 0.5 ? col('#a7a296') : col('#7e7a72'));
+    // white jersey barriers with rust streaks
+    for (const [x, z, yw] of [[-1.5, 9.6, 0], [3.8, 9.8, 0.08]]) {
+      mb.at([x, 0, z], yw); mb.box([0, 0.55, 0], [4.6, 1.1, 0.8], n => n[1] > 0.5 ? col('#e9e5dc') : col('#d6cfc2')); mb.box([0, 0.12, 0], [4.6, 0.24, 1.1], col('#cfc8ba'));
+      for (let i = 0; i < 5; i++) mb.box([-1.9 + i * 0.95, 0.6, 0.41], [0.07, 0.6, 0.02], col('#8a4a2a'));
+      mb.at();
+    }
+    // tall wave-impact wall on the right with a fence on top (파도충격완화시설)
+    mb.box([7.6, 1.8, 4.6], [1.0, 3.6, 10], n => n[1] > 0.5 ? col('#ece8df') : col('#ddd6c8'));
+    for (let i = 0; i < 5; i++) { mb.cyl([7.6, 3.6, 0.4 + i * 2.1], [7.4, 6.6, 0.4 + i * 2.1], 0.12, 0.1, col('#d6d2c8'), 5); }
+    mb.box([7.5, 6.0, 4.6], [0.04, 2.0, 9], col('#7b8b88'));
+    // small loading crane at the yard corner
+    mb.cyl([-6.2, 0, 8.2], [-6.2, 1.8, 8.2], 0.45, 0.4, col('#e6e6e6'), 10);
+    mb.cyl([-6.2, 1.6, 8.2], [-4.0, 4.0, 10.6], 0.22, 0.14, col('#f2f2f2'), 8);
+    mb.cyl([-4.0, 4.0, 10.6], [-4.0, 1.6, 10.6], 0.02, 0.02, col('#333'), 3, false);
+    mb.box([-6.2, 1.1, 7.2], [0.8, 0.8, 0.6], col('#2f3a40'));
     return mb.build();
   },
   flag: () => {
@@ -420,6 +478,125 @@ const FAC = {
   spring: () => { const mb = new MB(); for (let k = 0; k < 14; k++) { const a = k / 14 * TAU; mb.box([Math.cos(a) * 2.2, 0.4, Math.sin(a) * 2.2], [1.1, 0.8, 0.6], col('#8a857a')); } mb.cyl([0, 0.2, 0], [0, 0.5, 0], 2, 2, col('#2d6f7a'), 16); mb.box([-3.2, 1, 0], [0.6, 2, 3], col('#9a958a')); return mb.build(); }
 };
 FAC.sign1 = FAC.sign(0); FAC.sign2 = FAC.sign(1);
+
+/* ---------------- 계단길 (terrain-following stairs with handrails) ----------------
+   Built in world space around an anchor at the middle of the route, so the element sits at the anchor. */
+function routeAt(rt, s) {
+  const S = rt.prof; s = clamp(s, 0, rt.len);
+  let lo = 0, hi = S.length - 1; while (hi - lo > 1) { const m = (lo + hi) >> 1; if (S[m].s <= s) lo = m; else hi = m; }
+  const a = S[lo], b = S[hi], t = b.s > a.s ? (s - a.s) / (b.s - a.s) : 0, dx = b.x - a.x, dz = b.z - a.z, l = Math.hypot(dx, dz) || 1;
+  return { x: lerp(a.x, b.x, t), z: lerp(a.z, b.z, t), y: lerp(a.y, b.y, t), dx: dx / l, dz: dz / l };
+}
+function routeAnchor(name) {
+  const rt = ROUTES[name]; if (!rt.anchor) { const m = routeAt(rt, rt.len * 0.5); rt.anchor = [m.x, TER.heightAt(m.x, m.z), m.z]; }
+  return rt.anchor;
+}
+function routeMesh(name) {
+  const rt = ROUTES[name], A = routeAnchor(name), mb = new MB(), hw = rt.w * 0.5;
+  const wood = col('#8a6845'), con = col('#8c877d'), post = col('#5b605d'), rail = col('#6d4a2c');
+  const treads = [];
+  let s = 0;
+  while (s < rt.len - 0.05) {
+    const p = routeAt(rt, s), q = routeAt(rt, s + 1), g = Math.abs(q.y - p.y);
+    const len = Math.min(g < 0.06 ? 1.8 : clamp(0.19 / g, 0.3, 1.5), rt.len - s);
+    const m = routeAt(rt, s + len * 0.5); let top = m.y;
+    for (const u of [0, 0.5, 1]) { const c = routeAt(rt, s + len * u); for (const l of [-hw, 0, hw]) top = Math.max(top, TER.heightAt(c.x - c.dz * l, c.z + c.dx * l) + 0.06); }
+    treads.push({ s0: s, s1: s + len, top });
+    mb.at([m.x - A[0], top - A[1], m.z - A[2]], Math.atan2(-m.dz, m.dx));
+    mb.box([0, -0.7, 0], [len + 0.04, 1.4, rt.w], n => n[1] > 0.5 ? V3.mul(wood, 0.92 + 0.16 * ((treads.length * 7) % 5) / 5) : con);
+    s += len;
+  }
+  mb.at();
+  // handrails on both sides
+  const topAt = (s) => { for (const t of treads) if (s <= t.s1 + 1e-6) return t.top; return treads[treads.length - 1].top; };
+  for (const side of [-1, 1]) {
+    let prev = null;
+    for (let s = 0.3; s <= rt.len - 0.2; s += 2.2) {
+      const c = routeAt(rt, s), l = side * (hw + 0.06), x = c.x - c.dz * l - A[0], z = c.z + c.dx * l - A[2], y = topAt(s) - A[1];
+      mb.box([x, y + 0.5, z], [0.08, 1.0, 0.08], post);
+      const P = [x, y + 1.0, z];
+      if (prev) {
+        const d = V3.sub(P, prev), hl = Math.hypot(d[0], d[2]), L = V3.len(d);
+        if (L < 4) {
+          const mid = V3.lerp(prev, P, 0.5), yaw = Math.atan2(-d[2], d[0]), pitch = Math.atan2(d[1], hl);
+          mb.at(mid, yaw, pitch); mb.box([0, 0, 0], [L + 0.06, 0.07, 0.09], rail); mb.box([0, -0.5, 0], [L, 0.04, 0.04], post); mb.at();
+        }
+      }
+      prev = P;
+    }
+  }
+  return mb.build();
+}
+
+/* ---------------- 물자 운반 케이블(삭도) ----------------
+   the cable hangs on the upper convex hull of the ground profile (+clearance), so it never cuts the slope */
+function cableGeo() {
+  if (CABLE.geo) return CABLE.geo;
+  const [ax, az] = CABLE.a, [bx, bz] = CABLE.b, dx = bx - ax, dz = bz - az, L = Math.hypot(dx, dz), ux = dx / L, uz = dz / L;
+  const ga = TER.heightAt(ax, az), gb = TER.heightAt(bx, bz), H0 = 5.2;
+  const pts = [[0, ga + H0]];
+  for (let s = 3; s < L - 3; s += 2) pts.push([s, TER.heightAt(ax + ux * s, az + uz * s) + 7]);
+  pts.push([L, gb + H0]);
+  const hull = [];
+  for (const p of pts) { while (hull.length >= 2) { const a = hull[hull.length - 2], b = hull[hull.length - 1]; if ((b[0] - a[0]) * (p[1] - a[1]) - (b[1] - a[1]) * (p[0] - a[0]) >= 0) hull.pop(); else break; } hull.push(p); }
+  // drop hull points that are too close together (one tower is enough)
+  const sup = [hull[0]]; for (let i = 1; i < hull.length - 1; i++) if (hull[i][0] - sup[sup.length - 1][0] > 22 && L - hull[i][0] > 22) sup.push(hull[i]); sup.push(hull[hull.length - 1]);
+  const yAt = (s) => {
+    for (let i = 0; i < sup.length - 1; i++) { const a = sup[i], b = sup[i + 1]; if (s <= b[0] || i === sup.length - 2) { const t = clamp((s - a[0]) / (b[0] - a[0]), 0, 1), span = b[0] - a[0]; return lerp(a[1], b[1], t) - span * 0.012 * 4 * t * (1 - t); } }
+    return sup[0][1];
+  };
+  CABLE.geo = { ax, az, ga, gb, L, ux, uz, sup, yAt, yaw: Math.atan2(-uz, ux), anchor: [ax, ga, az] };
+  return CABLE.geo;
+}
+/* centre of the cable at fraction u (0 = 선착장, 1 = 경비대), in the cable element's local frame */
+function cableLocal(u) { const G = cableGeo(), s = clamp(u, 0, 1) * G.L; return [G.ux * s, G.yAt(s) - G.ga, G.uz * s]; }
+function cableMesh() {
+  const G = cableGeo(), mb = new MB(), steel = col('#8e959a'), dark = col('#41474c'), wire = col('#2a2c2e'), conc = col('#9a958b');
+  const nx = -G.uz, nz = G.ux, Lp = (s, l, y) => [G.ux * s + nx * l, y, G.uz * s + nz * l];
+  // two track ropes
+  for (const l of [-0.55, 0.55]) {
+    let prev = null;
+    for (let s = 0; s <= G.L + 0.01; s += Math.min(4, G.L - s || 4)) { const p = Lp(s, l, G.yAt(s) - G.ga); if (prev) mb.cyl(prev, p, 0.065, 0.065, wire, 4, false); prev = p; if (s >= G.L) break; }
+  }
+  // stations
+  for (const end of [0, 1]) {
+    const s = end ? G.L : 0, g = (end ? G.gb : G.ga) - G.ga, top = G.yAt(s) - G.ga, back = end ? 1 : -1;
+    const c = Lp(s, 0, 0), yaw = G.yaw;
+    mb.at([c[0], g, c[2]], yaw);
+    mb.box([back * 1.5, -0.6, 0], [6.5, 1.6, 4.2], conc);
+    for (const l of [-1.25, 1.25]) { mb.cyl([-0.9, 0.2, l], [0, top - g + 0.2, l * 0.5], 0.14, 0.11, steel, 6); mb.cyl([0.9, 0.2, l], [0, top - g + 0.2, l * 0.5], 0.14, 0.11, steel, 6); }
+    mb.cyl([0, top - g + 0.25, -0.9], [0, top - g + 0.25, 0.9], 0.75, 0.75, dark, 14);
+    mb.box([back * 3.2, 1.25, 0], [3.0, 2.5, 3.2], col('#eeeae2')); mb.box([back * 3.2, 2.6, 0], [3.4, 0.25, 3.6], col('#2f5f8a'));
+    mb.box([back * 1.7, 1.2, 1.62], [0.9, 1.6, 0.06], col('#3e5568'));
+    mb.at();
+  }
+  // lattice towers on the intermediate supports
+  for (let i = 1; i < G.sup.length - 1; i++) {
+    const s = G.sup[i][0], gx = G.ux * s, gz = G.uz * s, g = TER.heightAt(G.ax + gx, G.az + gz) - G.ga - 0.3, top = G.yAt(s) - G.ga + 0.25;
+    mb.at([gx, 0, gz], G.yaw);
+    const h = top - g, legs = [[-1, -1], [1, -1], [1, 1], [-1, 1]];
+    for (const [a, b] of legs) mb.cyl([a * 1.1, g, b * 1.1], [a * 0.35, top - 0.3, b * 0.45], 0.08, 0.06, steel, 4);
+    const nb = Math.max(2, Math.round(h / 2.2));
+    for (let k = 1; k < nb; k++) { const t = k / nb, y = g + h * t - 0.3 * t, w = lerp(1.1, 0.35, t), wz = lerp(1.1, 0.45, t); mb.box([0, y, -wz], [w * 2, 0.06, 0.06], steel); mb.box([0, y, wz], [w * 2, 0.06, 0.06], steel); mb.box([-w, y, 0], [0.06, 0.06, wz * 2], steel); mb.box([w, y, 0], [0.06, 0.06, wz * 2], steel); }
+    mb.box([0, top - 0.2, 0], [0.5, 0.2, 2.2], dark);
+    for (const l of [-0.55, 0.55]) mb.cyl([-0.35, top - 0.05, l], [0.35, top - 0.05, l], 0.16, 0.16, dark, 8);
+    mb.at();
+  }
+  return mb.build();
+}
+function cablecarMesh() {
+  const mb = new MB(), frame = col('#e0742c'), steel = col('#5d6468');
+  mb.box([0, -0.1, 0], [1.6, 0.35, 1.5], steel);
+  for (const x of [-0.55, 0.55]) for (const z of [-0.55, 0.55]) mb.cyl([x, 0.1, z], [x, 0.1, z * 1.01], 0.16, 0.16, col('#222'), 8);
+  for (const x of [-0.5, 0.5]) mb.cyl([x, -0.25, 0], [x * 0.9, -1.55, 0], 0.05, 0.05, steel, 5);
+  mb.box([0, -1.6, 0], [2.2, 0.12, 1.5], frame);
+  mb.box([0, -3.05, 0], [2.2, 0.16, 1.5], col('#6e6e6a'));
+  for (const x of [-1.05, 1.05]) for (const z of [-0.7, 0.7]) mb.box([x, -2.32, z], [0.1, 1.45, 0.1], frame);
+  for (const z of [-0.7, 0.7]) mb.box([0, -2.32, z], [2.1, 0.06, 0.06], frame);
+  mb.box([-0.45, -2.6, 0], [0.9, 0.75, 0.9], col('#a77a4a')); mb.box([0.55, -2.65, -0.2], [0.7, 0.65, 0.7], col('#c9a46c'));
+  mb.cyl([0.55, -2.97, 0.45], [0.55, -2.25, 0.45], 0.28, 0.28, col('#3b78c0'), 10);
+  return mb.build();
+}
 
 /* ---------------- exploration boat ---------------- */
 function boatMesh() {

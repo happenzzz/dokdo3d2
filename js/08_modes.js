@@ -2,7 +2,7 @@
 /* ===== 08 modes & controls ===== */
 const INPUT = { ptrs: new Map(), keys: {}, lastTap: 0, lastTapXY: [0, 0], joy: null };
 const OBS = { t: [0, 20, 0], d: 820, yaw: 0.35, pitch: -0.42, vy: 0, vp: 0, anim: null };
-const EXP = { pos: [199, 3.7, 186], vel: [0, 0, 0], yaw: Math.PI, pitch: -0.05, state: 'walk', move: [0, 0], vert: 0, run: false, bubT: 0, diving: null, ascend: false, bob: 0 };
+const EXP = { pos: [54, 3.7, 108], vel: [0, 0, 0], yaw: -1.235, pitch: -0.05, state: 'walk', move: [0, 0], vert: 0, run: false, bubT: 0, diving: null, ascend: false, bob: 0 };
 const PRESETS = {
   all: { t: [-20, 25, -20], d: 820, yaw: 0.35, pitch: -0.42 }, dong: { t: [175, 35, 80], d: 270, yaw: -0.75, pitch: -0.36 },
   seo: { t: [-235, 60, -90], d: 340, yaw: 0.95, pitch: -0.3 }, top: { t: [-20, 0, -30], d: 980, yaw: 0, pitch: -1.5 }, under: { t: [18, -9, 112], d: 22, yaw: -2.6, pitch: -0.2 }
@@ -50,7 +50,7 @@ function worldHit(sx, sy, withWater = true) {
 /* ---------- explorer ---------- */
 function expEyeY() { const s = EXP.state; return s === 'walk' || s === 'fall' ? 1.6 : s === 'trans' ? 1.3 : s === 'float' ? 0.3 : 0; }
 function stampAt(x, z) { const i = Math.round((x - TER.X0) / TER.C), j = Math.round((z - TER.Z0) / TER.C); if (i < 0 || j < 0 || i >= TER.W || j >= TER.D) return -99; return TER.ST[j * TER.W + i]; }
-const DOCK = { boat: [208, 205, 0], quay: [199, 186] };
+const DOCK = { boat: [37, 106, Math.PI / 2], quay: [54, 108], house: [-121, 0, 47] };   // 선착장에 서면 서도 주민숙소가 마주 보여요
 const yawTo = (from, to) => Math.atan2(to[0] - from[0], -(to[2] - from[2]));
 const inBounds = (x, z, m = 20) => x > TER.X0 + m && z > TER.Z0 + m && x < TER.X0 + TER.SIZE_X - m && z < TER.Z0 + TER.SIZE_Z - m;
 function findBoat(create) {
@@ -126,7 +126,7 @@ function expUpdate(dt) {
   } else if (E.state === 'walk') {
     const climb = E.climb, sp = climb ? (run ? 3.4 : 2.1) : (run ? 7 : 3.4), step = sp * dt;
     const nx = E.pos[0] + (fw[0] * mz + rt[0] * mx) * step, nz = E.pos[2] + (fw[2] * mz + rt[2] * mx) * step;
-    const ng = TER.heightAt(nx, nz), rise = ng - g, ok = (climb || rise < 1.2 * step + 0.08) && stampAt(nx, nz) < 2 && inBounds(nx, nz);
+    const ng = TER.heightAt(nx, nz), rise = ng - g, ok = (climb || rise < 1.2 * step + 0.08 || (rise < 4.2 * step + 0.1 && TER.onStairs(nx, nz))) && stampAt(nx, nz) < 2 && inBounds(nx, nz);   // 계단길에서는 가파른 곳도 걸어 올라가요
     if (ok && (mx || mz)) { E.pos[0] = nx; E.pos[2] = nz; E.blockT = 0; }
     else if ((mx || mz) && rise > 0 && !climb) {
       E.blockT = (E.blockT || 0) + dt;
@@ -219,8 +219,8 @@ function expSwim() {
 }
 function expGoQuay() {
   const E = EXP; if (E.state === 'boat') { AUDIO.engine(false); }
-  const q = [DOCK.quay[0], TER.heightAt(DOCK.quay[0], DOCK.quay[1]), DOCK.quay[1]];
-  expTransit(q, { arc: 18, face: Math.PI, then: () => { EXP.state = 'walk'; UI.toast('선착장에 도착했어요 ⚓'); } });
+  const q = [DOCK.quay[0], groundY(DOCK.quay[0], DOCK.quay[1]), DOCK.quay[1]];
+  expTransit(q, { arc: 18, face: yawTo(q, DOCK.house), then: () => { EXP.state = 'walk'; UI.toast('선착장에 도착했어요 ⚓ 바다 건너 주민숙소가 보여요. 계단길을 따라 경비대까지 올라가 볼까요?'); } });
 }
 /* ---------- boat ---------- */
 function boatBoard() {
@@ -355,6 +355,7 @@ function placeY(kind, p) {
   return g;
 }
 function devPlace(kind, p) {
+  const anchor = kindAnchor(kind); if (anchor) p = anchor;   // 계단길·케이블은 정해진 길 위에만 놓여요
   const k = KINDS[kind], g = TER.heightAt(p[0], p[2]);
   if ((k.place === 'seabed' || k.place === 'water') && g > -1.5) { UI.toast(k.name + '은(는) 바닷속에 놓아 주세요'); AUDIO.nope(); return; }
   if (k.place === 'ground' && g < 0.3 && k.beh !== 'static') { UI.toast(k.name + '은(는) 땅 위에 놓아 주세요'); AUDIO.nope(); return; }
@@ -380,7 +381,7 @@ const MODE = {
     if (FOCUS.active) FOCUS.restore(true);
     const prev = this.cur; this.cur = m; SCN.sel = null; R.brush[3] = 0;
     document.body.classList.remove('m-observer', 'm-explorer', 'm-dev', 'm-quiz', 'm-tour', 'm-game'); document.body.classList.add('m-' + m);
-    if (m === 'explorer' && prev !== 'explorer') { if (!EXP.placed) { expTeleport([199, TER.heightAt(199, 186), 186], Math.PI); EXP.placed = true; } UI.toast('탐험가 모드: 움직여 보고, 궁금한 것을 눌러 보세요!'); }
+    if (m === 'explorer' && prev !== 'explorer') { if (!EXP.placed) { expTeleport([DOCK.quay[0], groundY(DOCK.quay[0], DOCK.quay[1]), DOCK.quay[1]], yawTo([DOCK.quay[0], 0, DOCK.quay[1]], DOCK.house)); EXP.placed = true; } UI.toast('탐험가 모드: 움직여 보고, 궁금한 것을 눌러 보세요!'); }
     if (prev === 'tour' && m !== 'tour') TOUR.close();
     if (prev === 'game' && m !== 'game') GAME.close();
     if (m === 'game') GAME.open();
